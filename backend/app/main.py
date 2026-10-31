@@ -5,6 +5,11 @@ from app.core.database import create_db_and_tables
 from app.api.auth import router as auth_router
 from app.api.products import router as products_router
 from app.api.plans import router as plans_router
+from app.api.subscriptions import router as subscriptions_router
+from app.api.billing import router as billing_router, tax_router, discount_router
+from app.api.invoices import router as invoices_router
+from app.api.payments import router as payments_router
+from app.api.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -41,6 +46,13 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(products_router)
 app.include_router(plans_router)
+app.include_router(subscriptions_router)
+app.include_router(billing_router)
+app.include_router(tax_router)
+app.include_router(discount_router)
+app.include_router(invoices_router)
+app.include_router(payments_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health", tags=["Health"])

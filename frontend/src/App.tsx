@@ -6,6 +6,8 @@ import { CatalogPage } from './pages/CatalogPage';
 import { SubscriptionsPage } from './pages/SubscriptionsPage';
 import { InvoicesPage } from './pages/InvoicesPage';
 import { LoginPage } from './pages/LoginPage';
+import { ExecutiveDashboard } from './pages/ExecutiveDashboard';
+import { CustomerPortal } from './pages/CustomerPortal';
 import type { UserRole } from './types';
 import { api } from './services/api';
 import { Calendar, ShieldCheck, Check } from 'lucide-react';
@@ -46,9 +48,9 @@ function AppContent() {
       role: newRole,
     });
     if (newRole === 'customer') {
-      navigate('/staff/subscriptions');
+      navigate('/portal');
     } else {
-      navigate('/admin/products');
+      navigate('/admin/dashboard');
     }
   };
 
@@ -71,9 +73,11 @@ function AppContent() {
 
   // Upflow-style capsule steps
   const steps = [
+    { number: '00', title: 'Executive Telemetry', path: '/admin/dashboard' },
     { number: '01', title: 'Catalog & Plans', path: '/admin/products' },
     { number: '02', title: 'Subscriptions', path: '/staff/subscriptions' },
     { number: '03', title: 'Invoicing & Cash', path: '/staff/invoices' },
+    { number: '04', title: 'Customer Portal', path: '/portal' },
   ];
 
   return (
@@ -157,12 +161,14 @@ function AppContent() {
         <Sidebar role={role} />
         <main className="flex-1 min-w-0">
           <Routes>
+            <Route path="/admin/dashboard" element={<ExecutiveDashboard />} />
             <Route path="/admin/products" element={<CatalogPage />} />
             <Route path="/staff/subscriptions" element={<SubscriptionsPage />} />
             <Route path="/staff/invoices" element={<InvoicesPage />} />
+            <Route path="/portal" element={<CustomerPortal />} />
             <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-            <Route path="/" element={<Navigate to="/admin/products" replace />} />
-            <Route path="*" element={<Navigate to="/admin/products" replace />} />
+            <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </main>
       </div>

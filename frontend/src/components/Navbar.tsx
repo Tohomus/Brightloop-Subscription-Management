@@ -23,7 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <nav className="mx-auto max-w-7xl rounded-full bg-[#0B0F19] px-5 py-2.5 sm:px-7 sm:py-3 text-white shadow-2xl border border-white/10 flex items-center justify-between">
         {/* Brand: brightloop. (Upflow style) */}
         <div className="flex items-center gap-8">
-          <NavLink to="/admin/products" className="flex items-center gap-1 group">
+          <NavLink to="/admin/dashboard" className="flex items-center gap-1 group">
             <span className="text-xl sm:text-2xl font-black tracking-tight text-white font-sans lowercase">
               brightloop
             </span>
@@ -32,6 +32,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Navigation Items (Upflow style) */}
           <div className="hidden lg:flex items-center gap-6 text-xs font-medium text-slate-300">
+            {currentRole !== 'customer' && (
+              <NavLink
+                to="/admin/dashboard"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 transition hover:text-white ${
+                    isActive ? 'text-white font-semibold' : ''
+                  }`
+                }
+              >
+                <span>Telemetry</span>
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </NavLink>
+            )}
+
             {currentRole !== 'customer' && (
               <NavLink
                 to="/admin/products"
