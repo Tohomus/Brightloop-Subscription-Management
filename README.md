@@ -65,48 +65,48 @@ This project was built with strict file boundaries and zero merge conflicts duri
 Brightloop-Subscription-Management/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                   # REST API Routers
-│   │   │   ├── auth.py            # User register, login, password reset
-│   │   │   ├── billing.py         # POST /api/billing/run, taxes, discounts
-│   │   │   ├── dashboard.py       # Executive finance aggregation (< 2s SLA)
-│   │   │   ├── invoices.py        # Invoices query, confirm, cancel
-│   │   │   ├── payments.py        # Payment recording & AR reconciliation
-│   │   │   ├── plans.py           # Subscription plans & quotation templates
-│   │   │   ├── products.py        # Product CRUD & variant pricing
-│   │   │   └── subscriptions.py   # State machine, quotations, contracts
-│   │   ├── core/                  # Database connection, security, JWT
-│   │   ├── models/                # SQLModel database tables
-│   │   ├── schemas/               # Pydantic validation schemas
-│   │   ├── services/              # Billing runner & tax calculations
-│   │   └── main.py                # FastAPI application entry & CORS
-│   ├── tests/                     # Integration and unit test suite
-│   ├── seed.py                    # Database seeder (Realistic demo data)
-│   └── requirements.txt           # Python dependencies
+│   │   ├── api/                    # REST API Routers
+│   │   │   ├── auth.py             # User register, login, password reset
+│   │   │   ├── billing.py          # POST /api/billing/run, taxes, discounts
+│   │   │   ├── dashboard.py        # Executive finance aggregation (< 2s SLA)
+│   │   │   ├── invoices.py         # Invoices query, confirm, cancel
+│   │   │   ├── payments.py         # Payment recording & AR reconciliation
+│   │   │   ├── plans.py            # Subscription plans & quotation templates
+│   │   │   ├── products.py         # Product CRUD & variant pricing
+│   │   │   └── subscriptions.py    # State machine, quotations, contracts
+│   │   ├── core/                   # Database connection, security, JWT
+│   │   ├── models/                 # SQLModel database tables
+│   │   ├── schemas/                # Pydantic validation schemas
+│   │   ├── services/               # Billing runner & tax calculations
+│   │   └── main.py                 # FastAPI application entry & CORS
+│   ├── tests/                      # Integration and unit test suite
+│   ├── seed.py                     # Database seeder (Realistic demo data)
+│   └── requirements.txt            # Python dependencies
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/            # Reusable UI components
-│   │   │   ├── Navbar.tsx         # Midnight floating pill header & persona switcher
-│   │   │   ├── Sidebar.tsx        # Operations rail with live active status
-│   │   │   ├── TimeMachine.tsx    # Chrono-Simulator widget (+1/+7/+30 days)
+│   │   ├── components/             # Reusable UI components
+│   │   │   ├── Navbar.tsx          # Midnight floating pill header & persona switcher
+│   │   │   ├── Sidebar.tsx         # Operations rail with live active status
+│   │   │   ├── TimeMachine.tsx     # Chrono-Simulator widget (+1/+7/+30 days)
 │   │   │   └── InvoicePrintModal.tsx # Printable letterhead invoice layout
-│   │   ├── pages/                 # Full-page views
+│   │   ├── pages/                  # Full-page views
 │   │   │   ├── ExecutiveDashboard.tsx # Real-time telemetry, MRR/ARR, aging
-│   │   │   ├── CatalogPage.tsx    # Products, variants, margin analysis
+│   │   │   ├── CatalogPage.tsx     # Products, variants, margin analysis
 │   │   │   ├── SubscriptionsPage.tsx # Multi-line quote builder & contract inspector
-│   │   │   ├── InvoicesPage.tsx   # AR ledger, payments modal, PDF print
-│   │   │   ├── CustomerPortal.tsx # Isolated tenant self-service portal
-│   │   │   └── LoginPage.tsx      # RBAC persona switcher & authentication
+│   │   │   ├── InvoicesPage.tsx    # AR ledger, payments modal, PDF print
+│   │   │   ├── CustomerPortal.tsx  # Isolated tenant self-service portal
+│   │   │   └── LoginPage.tsx       # RBAC persona switcher & authentication
 │   │   ├── services/
-│   │   │   ├── api.ts             # Typed REST client with offline fallback
-│   │   │   └── dashboardService.ts# Telemetry caching & event emitter
-│   │   ├── types/                 # Shared TypeScript interfaces
-│   │   ├── App.tsx                # Capsule step router & live health watcher
-│   │   └── main.tsx               # Vite React mount
+│   │   │   ├── api.ts              # Typed REST client with offline fallback
+│   │   │   └── dashboardService.ts # Telemetry caching & event emitter
+│   │   ├── types/                  # Shared TypeScript interfaces
+│   │   ├── App.tsx                 # Capsule step router & live health watcher
+│   │   └── main.tsx                # Vite React mount
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── context/                       # Hackathon guidelines & architecture contracts
+├── context/                        # Hackathon guidelines & architecture contracts
 └── README.md
 ```
 
@@ -138,8 +138,8 @@ python seed.py
 uvicorn app.main:app --reload --port 8000
 ```
 
-* Swagger API documentation is available at: `http://localhost:8000/docs`
-* Health verification endpoint: `http://localhost:8000/health`
+- Swagger API documentation is available at: `http://localhost:8000/docs`
+- Health verification endpoint: `http://localhost:8000/health`
 
 ---
 
@@ -160,8 +160,8 @@ npm run lint
 npm run dev
 ```
 
-* Access the application in your browser at: `http://localhost:5173`
-* The bottom-right floating badge will display a pulsing green dot: **`FastAPI Live :8000 • SQLite`**.
+- Access the application in your browser at: `http://localhost:5173`
+- The bottom-right floating badge will display a pulsing green dot: **`FastAPI Live :8000 • SQLite`**.
 
 ---
 
