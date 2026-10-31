@@ -3,13 +3,9 @@ import {
   FileSpreadsheet,
   Receipt,
   Download,
-  Calendar,
-  CreditCard,
   CheckCircle2,
-  AlertCircle,
   Pause,
   Play,
-  ArrowUpRight,
   ShieldCheck,
   User,
 } from 'lucide-react';
@@ -74,7 +70,6 @@ export const CustomerPortal: React.FC = () => {
   };
 
   // Rollups for customer overview
-  const activeSubsCount = subscriptions.filter((s) => s.status === 'Active').length;
   const totalPaid = invoices.reduce((acc, i) => acc + (i.amount_paid || 0), 0);
   const pendingDue = invoices
     .filter((i) => i.status === 'Confirmed' || i.status === 'Overdue')

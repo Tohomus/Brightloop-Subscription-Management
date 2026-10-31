@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, FastForward, Play, RefreshCw, CheckCircle, Clock } from 'lucide-react';
+import { Calendar, FastForward, RefreshCw, CheckCircle, Clock } from 'lucide-react';
 import { dashboardService } from '../services/dashboardService';
 
 interface TimeMachineProps {
