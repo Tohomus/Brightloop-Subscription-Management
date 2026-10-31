@@ -630,7 +630,32 @@ export const api = {
     const currentUser = this.getCurrentUser();
     try {
       const query = statusFilter && statusFilter !== 'All' ? `?status=${statusFilter}` : '';
-      return await request<Subscription[]>(`/subscriptions${query}`);
+      const raw = await request<any[]>(`/subscriptions${query}`);
+      return raw.map((s) => ({
+        id: String(s.id),
+        subscription_number: s.subscription_number || `SUB-${s.id}`,
+        customer_id: String(s.customer_id),
+        customer_name: s.customer_name || `Customer #${s.customer_id}`,
+        customer_email: s.customer_email || `customer${s.customer_id}@brightloop.io`,
+        plan_id: String(s.plan_id),
+        plan_name: s.plan_name || 'Standard Pro Plan',
+        frequency: s.frequency || 'monthly',
+        status: s.status,
+        start_date: s.start_date,
+        expiry_date: s.expiry_date || '',
+        next_billing_date: s.next_billing_date,
+        payment_terms: s.payment_terms || 'Net 15',
+        recurring_amount: s.recurring_amount ?? 0,
+        lines: (s.lines || []).map((l: any) => ({
+          id: String(l.id || ''),
+          product_id: String(l.product_id),
+          product_name: l.product_name || `Product #${l.product_id}`,
+          variant_name: l.variant_name || '',
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          line_amount: l.line_amount ?? l.unit_price * l.quantity,
+        })),
+      }));
     } catch {
       let result = [...subscriptionsStore];
       if (currentUser?.role === 'customer') {
@@ -701,16 +726,18 @@ export const api = {
   },
 
   async deleteSubscription(id: string): Promise<void> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      await request<void>(`/subscriptions/${id}`, { method: 'DELETE' });
+      await request<void>(`/subscriptions/${numId}`, { method: 'DELETE' });
     } catch {
       subscriptionsStore = subscriptionsStore.filter((s) => s.id !== id);
     }
   },
 
   async updateSubscriptionStatus(id: string, status: SubscriptionStatus): Promise<Subscription> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Subscription>(`/subscriptions/${id}/status`, {
+      return await request<Subscription>(`/subscriptions/${numId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       });
@@ -729,7 +756,36 @@ export const api = {
     const currentUser = this.getCurrentUser();
     try {
       const query = statusFilter && statusFilter !== 'All' ? `?status=${statusFilter}` : '';
-      return await request<Invoice[]>(`/invoices${query}`);
+      const raw = await request<any[]>(`/invoices${query}`);
+      return raw.map((inv) => ({
+        id: String(inv.id),
+        invoice_number: inv.invoice_number || `INV-${inv.id}`,
+        subscription_id: String(inv.subscription_id),
+        subscription_number: inv.subscription_number || `SUB-${inv.subscription_id}`,
+        customer_id: String(inv.customer_id),
+        customer_name: inv.customer_name || `Customer #${inv.customer_id}`,
+        billing_cycle_key: inv.billing_cycle_key || inv.idempotency_key || '',
+        period_start: inv.period_start,
+        period_end: inv.period_end,
+        issue_date: inv.issue_date || inv.invoice_date,
+        due_date: inv.due_date,
+        subtotal: inv.subtotal ?? 0,
+        tax_amount: inv.tax_amount ?? inv.tax_total ?? 0,
+        discount_amount: inv.discount_amount ?? inv.discount_total ?? 0,
+        total_amount: inv.total_amount ?? inv.total ?? 0,
+        amount_paid: inv.amount_paid ?? 0,
+        status: inv.status,
+        lines: (inv.lines || []).map((l: any) => ({
+          id: String(l.id || ''),
+          description: l.description || 'Billing item',
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          tax_rate: l.tax_rate ?? 0,
+          tax_amount: l.tax_amount ?? 0,
+          discount_amount: l.discount_amount ?? 0,
+          line_total: l.line_total ?? l.line_subtotal ?? l.unit_price * l.quantity,
+        })),
+      }));
     } catch {
       let result = [...invoicesStore];
       if (currentUser?.role === 'customer') {
@@ -745,8 +801,9 @@ export const api = {
   },
 
   async confirmInvoice(id: string): Promise<Invoice> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Invoice>(`/invoices/${id}/confirm`, { method: 'POST' });
+      return await request<Invoice>(`/invoices/${numId}/confirm`, { method: 'POST' });
     } catch {
       const idx = invoicesStore.findIndex((i) => i.id === id);
       if (idx !== -1) {
@@ -758,8 +815,9 @@ export const api = {
   },
 
   async cancelInvoice(id: string): Promise<Invoice> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Invoice>(`/invoices/${id}/cancel`, { method: 'POST' });
+      return await request<Invoice>(`/invoices/${numId}/cancel`, { method: 'POST' });
     } catch {
       const idx = invoicesStore.findIndex((i) => i.id === id);
       if (idx !== -1) {
@@ -776,11 +834,15 @@ export const api = {
     payment_method: Payment['payment_method'];
     payment_date: string;
     notes?: string;
-  }): Promise<Invoice> {
+  }): Promise<any> {
+    const numId = parseInt(String(payment.invoice_id).replace(/\D/g, ''), 10) || 1;
     try {
-      return await request<Invoice>('/payments', {
+      return await request<any>('/payments', {
         method: 'POST',
-        body: JSON.stringify(payment),
+        body: JSON.stringify({
+          ...payment,
+          invoice_id: numId,
+        }),
       });
     } catch {
       const idx = invoicesStore.findIndex((i) => i.id === payment.invoice_id);
