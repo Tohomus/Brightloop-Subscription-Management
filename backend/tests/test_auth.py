@@ -104,15 +104,17 @@ def test_login_success_and_failure(client: TestClient):
 
 
 def test_auth_me_and_token_verification(client: TestClient):
-    client.post(
+    reg = client.post(
         "/api/auth/register",
         json={"email": "finance@acmeglobal.com", "password": "Brightloop@2026!", "role": "customer"},
-    )
+    ).json()
     login_resp = client.post(
         "/api/auth/login",
         json={"email": "finance@acmeglobal.com", "password": "Brightloop@2026!"},
     )
-    token = login_resp.json()["access_token"]
+    token_json = login_resp.json()
+    assert token_json["customer_id"] == reg["id"]
+    token = token_json["access_token"]
 
     # Valid token
     me_resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})

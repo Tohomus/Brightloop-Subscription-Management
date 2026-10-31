@@ -49,6 +49,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     role: UserRole
     user_id: int
+    customer_id: Optional[int] = None
     email: str
 
 
