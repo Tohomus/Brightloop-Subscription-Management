@@ -2,7 +2,7 @@ import calendar
 from datetime import date, timedelta
 from sqlmodel import Session, select
 
-from app.models.billing import Subscription, SubscriptionStatus
+from app.models.billing import DiscountRule, Subscription, SubscriptionStatus
 from app.models.catalog import BillingFrequency, Plan, Product
 from app.models.invoicing import Invoice, InvoiceDiscountUse, InvoiceLine, InvoiceStatus
 from app.services.tax_discount_calc import calculate_lines
@@ -94,6 +94,10 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
             invoice.invoice_number = f"INV-{simulated_date.year}-{invoice.id:04d}"
             for rule_id in discount_rule_ids:
                 session.add(InvoiceDiscountUse(invoice_id=invoice.id, discount_rule_id=rule_id))
+                rule = session.get(DiscountRule, rule_id)
+                if rule is not None:
+                    rule.uses += 1
+                    session.add(rule)
             subscription.next_billing_date = next_billing_date
             generated += 1
 
