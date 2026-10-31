@@ -28,6 +28,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 def create_db_and_tables() -> None:
     """Creates all database tables defined by SQLModel classes if they don't exist."""
+    import app.models  # noqa: F401
     SQLModel.metadata.create_all(engine)
 
 
