@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ShieldCheck,
   Check,
   Lock,
   Mail,
@@ -11,9 +10,10 @@ import {
   ArrowRight,
   Calendar,
   Receipt,
-  FileSpreadsheet,
   ChevronRight,
   Sliders,
+  Terminal,
+  Copy,
 } from 'lucide-react';
 import type { UserRole } from '../types';
 import { api } from '../services/api';
@@ -30,6 +30,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedCli, setCopiedCli] = useState(false);
 
   // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -94,10 +95,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   };
 
+  const copyCliCommand = () => {
+    navigator.clipboard.writeText('curl -X GET http://127.0.0.1:8000/api/dashboard/summary');
+    setCopiedCli(true);
+    setTimeout(() => setCopiedCli(false), 2000);
+  };
+
   return (
-    <div className="min-h-screen bg-white text-[#111827] flex flex-col justify-between selection:bg-black selection:text-white">
+    <div className="min-h-screen bg-[#F9F9FA] text-[#1A1C1D] flex flex-col justify-between selection:bg-black selection:text-white">
       {/* 1. STITCH TOP NAVBAR */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 transition-all">
+      <header className="sticky top-0 z-50 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#E4E4E7] transition-all">
         <div className="max-w-[1340px] mx-auto px-6 h-20 flex items-center justify-between">
           {/* Left Brand & Navigation */}
           <div className="flex items-center space-x-10">
@@ -108,27 +115,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
               </div>
-              <span className="text-xl font-bold tracking-tight text-neutral-900 lowercase">
+              <span className="text-xl font-bold tracking-tight text-[#09090B] lowercase font-sans">
                 brightloop
               </span>
+              <div className="hidden sm:flex items-center px-2 py-0.5 rounded-full border border-[#E4E4E7] bg-[#F7F7F8] font-mono text-[10px] text-[#71717A] uppercase tracking-wider font-medium">
+                <span>MCP v2.4</span>
+              </div>
             </a>
 
-            <nav className="hidden md:flex items-center space-x-8 text-[15px] font-medium text-gray-700">
+            <nav className="hidden md:flex items-center space-x-8 text-[14px] font-medium text-[#71717A]">
               <a className="hover:text-black transition-colors" href="#personas">Personas</a>
-              <a className="hover:text-black transition-colors" href="#features">Architecture</a>
+              <a className="hover:text-black transition-colors" href="#architecture">Architecture</a>
               <a className="hover:text-black transition-colors" href="#auth">Direct Sign-In</a>
             </nav>
           </div>
 
           {/* Right: Engine Status Pill & Instant Access */}
           <div className="flex items-center space-x-4 text-[14px] font-medium">
-            <div className="hidden sm:flex items-center space-x-2 bg-gray-50 border border-gray-200/80 px-3 py-1.5 rounded-full text-xs text-gray-600">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-mono text-[11px]">SQLite v3.45 • LIVE SLA &lt;2s</span>
+            <div className="hidden sm:flex items-center space-x-2 bg-[#FFFFFF] border border-[#E4E4E7] px-3.5 py-1.5 rounded-full text-xs text-[#71717A] shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+              </span>
+              <span className="font-mono text-[11px] font-medium text-[#09090B]">SQLite v3.45 • LIVE SLA &lt;2s</span>
             </div>
             <a
               href="#personas"
-              className="bg-black hover:bg-neutral-800 text-white px-5 py-2.5 rounded-full font-semibold text-[14px] transition-all cursor-pointer shadow-xs"
+              className="bg-black hover:bg-neutral-800 text-white px-5 py-2.5 rounded-full font-semibold text-[13px] transition-all cursor-pointer shadow-xs active:scale-95"
             >
               Instant Demo
             </a>
@@ -136,220 +149,313 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
       </header>
 
-      {/* 2. HERO SECTION */}
-      <section className="pt-20 pb-16 text-center relative px-4" id="top">
-        <div className="max-w-4xl mx-auto flex flex-col items-center">
-          {/* Social Proof Pill Stack */}
-          <div className="flex flex-col items-center space-y-3 mb-8">
-            <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200/80 px-4 py-1.5 rounded-full text-xs text-gray-600">
-              <span className="h-2 w-2 rounded-full bg-blue-600" />
-              <span className="font-medium">Deterministic Billing Engine • Zero Mock Placeholders</span>
-            </div>
-            <p className="text-[14px] text-gray-500 font-medium">
-              Trusted by recurring revenue operators. Built with real SQLite telemetry.
-            </p>
+      {/* 2. HERO SECTION WITH ARCHITECTURAL DOT-GRID & RADIAL GRADIENT */}
+      <section className="relative w-full overflow-hidden bg-[#FFFFFF] pt-20 pb-16 border-b border-[#E4E4E7] text-center px-4" id="top">
+        {/* Architectural Dot Matrix Grid Backdrop */}
+        <div className="absolute inset-0 pointer-events-none opacity-40 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_20%,transparent_100%)]">
+          <svg className="w-full h-full" height="100%" width="100%">
+            <defs>
+              <pattern height="24" id="login-dot-grid" patternUnits="userSpaceOnUse" width="24">
+                <circle cx="2" cy="2" fill="#71717A" opacity="0.35" r="1" />
+              </pattern>
+            </defs>
+            <rect fill="url(#login-dot-grid)" height="100%" width="100%" />
+          </svg>
+        </div>
+
+        {/* Subtle Cobalt Radial Glow Vignette */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[650px] h-[320px] bg-gradient-to-b from-[#2563EB]/10 via-[#2563EB]/4 to-transparent blur-3xl pointer-events-none rounded-full" />
+
+        <div className="relative max-w-4xl mx-auto flex flex-col items-center z-10">
+          {/* Eyebrow Tag */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#F7F7F8] border border-[#E4E4E7] mb-6 shadow-2xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+            </span>
+            <span className="font-mono text-[11px] text-[#09090B] uppercase tracking-wider font-semibold">
+              Deterministic B2B Recurring Billing
+            </span>
+            <span className="h-3 w-px bg-[#E4E4E7] mx-0.5" />
+            <span className="font-mono text-[11px] text-[#71717A] font-medium">v2.4.0-stable</span>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-[68px] leading-[1.08] font-bold tracking-[-0.035em] text-neutral-900 mb-6 max-w-4xl">
+          {/* Main Headline */}
+          <h1 className="text-4xl sm:text-5xl md:text-[68px] leading-[1.08] font-bold tracking-[-0.035em] text-[#09090B] mb-6 max-w-4xl">
             The subscription engine your financial operations deserve.
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-[20px] leading-relaxed text-gray-500 max-w-2xl mb-10 font-normal">
+          <p className="text-lg md:text-[20px] leading-relaxed text-[#71717A] max-w-2xl mb-8 font-normal">
             Brightloop connects your pricing catalog to automated prorations, idempotent billing runners, and isolated customer portals. What you invoice starts with what actually works.
           </p>
 
-          {/* CTA Buttons */}
+          {/* Terminal Quickstart Card (Precision Engineering Dark Console) */}
+          <div className="w-full max-w-2xl rounded-xl bg-[#0A0A0B] border border-[#27272A] shadow-2xl p-4 sm:p-5 text-left mb-10 transition-all">
+            {/* Terminal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                <span className="ml-2 font-mono text-xs text-[#A1A1AA] select-none">brightloop-engine ~ bash</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#A1A1AA] uppercase tracking-wider">
+                <Terminal className="h-3 w-3 text-[#A1A1AA]" />
+                <span>STDIO Protocol</span>
+              </div>
+            </div>
+            {/* Command Box */}
+            <div className="flex items-center justify-between gap-3 bg-[#141416] p-3 rounded-lg border border-[#27272A]">
+              <div className="flex items-center gap-2 font-mono text-xs text-[#FAFAFA] overflow-x-auto select-all">
+                <span className="text-[#71717A] select-none">$</span>
+                <span className="text-[#A1A1AA]">curl</span>
+                <span className="text-white">http://127.0.0.1:8000/api/dashboard/summary</span>
+                <span className="text-emerald-400"># SLA &lt;2s</span>
+              </div>
+              <button
+                type="button"
+                onClick={copyCliCommand}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#27272A] hover:bg-[#3F3F46] text-[#FAFAFA] font-mono text-xs transition-all active:scale-95 cursor-pointer"
+              >
+                {copiedCli ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="flex items-center justify-between pt-3 text-xs font-mono text-[#A1A1AA]">
+              <span>FastAPI Backend • SQLite Invariants Active</span>
+              <a href="#personas" className="inline-flex items-center gap-1 hover:text-white transition-colors text-emerald-400">
+                Launch Demo Console ↓
+              </a>
+            </div>
+          </div>
+
+          {/* CTA Buttons Row */}
           <div className="flex items-center justify-center space-x-4 mb-4">
             <a
               href="#personas"
-              className="bg-black hover:bg-neutral-800 text-white font-medium px-7 py-3 rounded-full text-[15px] transition-all cursor-pointer shadow-sm"
+              className="bg-black hover:bg-neutral-800 text-white font-medium px-7 py-3 rounded-full text-[14px] sm:text-[15px] transition-all cursor-pointer shadow-sm active:scale-95"
             >
               Choose Demo Persona
             </a>
             <a
               href="#auth"
-              className="bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium px-6 py-3 rounded-full text-[15px] inline-flex items-center space-x-2 transition-all cursor-pointer"
+              className="bg-[#F7F7F8] hover:bg-[#EEEEEF] text-[#09090B] border border-[#E4E4E7] font-medium px-6 py-3 rounded-full text-[14px] sm:text-[15px] inline-flex items-center space-x-2 transition-all cursor-pointer active:scale-95"
             >
               <span>Sign In with Credentials</span>
               <ArrowRight className="w-4 h-4" />
             </a>
           </div>
-          <p className="text-xs text-gray-400 font-medium tracking-wide">
+          <p className="text-xs text-[#71717A] font-medium tracking-wide">
             Role-Based Access Control • Administrator · Operations Staff · Customer Tenant
           </p>
         </div>
       </section>
 
-      {/* 3. INSTANT DEMO PERSONAS SECTION */}
-      <section className="py-16 bg-gray-50/70 border-y border-gray-100 px-4 sm:px-6" id="personas">
+      {/* 3. INSTANT DEMO PERSONAS SECTION (MOBBIN PRICING TIER GRID) */}
+      <section className="py-20 bg-[#F9F9FA] border-b border-[#E4E4E7] px-4 sm:px-6" id="personas">
         <div className="max-w-[1240px] mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-[44px] font-bold tracking-tight text-neutral-900 leading-[1.15]">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#E4E4E7] bg-[#F7F7F8] font-mono text-[11px] text-[#71717A] uppercase tracking-wider mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-black" />
+              <span>Three-Persona Dispatch 2026.1</span>
+            </div>
+            <h2 className="text-3xl md:text-[48px] font-bold tracking-tight text-[#09090B] leading-[1.1]">
               Instant Persona Switcher
             </h2>
-            <p className="text-gray-500 text-[15px] mt-2">
-              Select any role to test end-to-end workflows with full route isolation and real SQLite data.
+            <p className="text-[#71717A] text-[15px] mt-2 max-w-xl mx-auto">
+              Select any role to test end-to-end workflows with full route isolation, dynamic pricing math, and real SQLite telemetry.
             </p>
           </div>
 
-          {/* 3 Interactive Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 3 Interactive Cards matching Mobbin Pricing Tiers */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* Persona 1: Administrator */}
             <div
               onClick={() => setPersona('admin', 'admin@brightloop.io', 'Brightloop@2026!')}
-              className={`bg-white rounded-2xl p-7 border transition-all cursor-pointer floating-card flex flex-col justify-between ${
+              className={`flex flex-col justify-between p-8 rounded-xl bg-[#FFFFFF] border transition-all cursor-pointer floating-card ${
                 selectedRole === 'admin'
                   ? 'border-black ring-2 ring-black/5 shadow-md'
-                  : 'border-gray-200/80 hover:border-gray-300 shadow-xs'
+                  : 'border-[#E4E4E7] hover:border-[#71717A]/40 shadow-xs'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center font-bold">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-[#71717A]">
+                    Persona 01
+                  </span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                     admin
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">Administrator</h3>
-                <p className="text-xs text-gray-500 mt-1 mb-6">
-                  Executive Telemetry & Rule Engine
+                <h3 className="text-2xl font-bold text-[#09090B] mb-1">Administrator</h3>
+                <p className="text-xs text-[#71717A] mb-6">
+                  Executive Telemetry &amp; Financial Formula Rules
                 </p>
 
-                <div className="space-y-3 text-[13px] text-gray-600 mb-6">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <div className="flex items-baseline gap-1 pb-6 mb-6 border-b border-[#E4E4E7]">
+                  <span className="font-mono text-3xl font-bold text-[#09090B] tabular-nums">$17,960</span>
+                  <span className="text-xs text-[#71717A] font-mono">/mo MRR</span>
+                </div>
+
+                <div className="space-y-3 mb-8 text-[13px] text-[#47464A]">
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Real $17,960 MRR &amp; aging exposure buckets</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Dynamic formula: <code className="font-mono text-xs">Unit = Base + Σ(ΔP)</code></span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Chrono-Simulator with idempotent runs</span>
                   </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="w-full bg-black hover:bg-neutral-800 text-white font-medium py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Launch Admin Console</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div>
+                <button
+                  type="button"
+                  className="w-full h-11 rounded-full border border-[#E4E4E7] bg-[#FFFFFF] text-[#09090B] font-medium text-xs flex items-center justify-center gap-1.5 hover:border-[#09090B] transition-all cursor-pointer active:scale-95"
+                >
+                  <span>Launch Admin Console</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            {/* Persona 2: Operations Staff */}
+            {/* Persona 2: Operations Staff (HIGHLIGHTED PRO TIER) */}
             <div
               onClick={() => setPersona('staff', 'operations@brightloop.io', 'Brightloop@2026!')}
-              className={`bg-white rounded-2xl p-7 border transition-all cursor-pointer floating-card flex flex-col justify-between ${
-                selectedRole === 'staff'
-                  ? 'border-black ring-2 ring-black/5 shadow-md'
-                  : 'border-gray-200/80 hover:border-gray-300 shadow-xs'
-              }`}
+              className="relative flex flex-col justify-between p-8 rounded-xl bg-[#FFFFFF] border-2 border-black shadow-md transition-all cursor-pointer floating-card"
             >
+              {/* Highlight Pill */}
+              <div className="absolute -top-3.5 left-8 px-3 py-0.5 bg-black text-white rounded-full font-mono text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+                <span>Primary Operations Deck</span>
+              </div>
+
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 bg-emerald-700 text-white rounded-xl flex items-center justify-center font-bold">
-                    <FileSpreadsheet className="w-5 h-5" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    operations
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-[#2563EB] font-semibold">
+                    Persona 02
+                  </span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    staff
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">Operations Staff</h3>
-                <p className="text-xs text-gray-500 mt-1 mb-6">
-                  Quotations, Contracts & Cash Ledger
+                <h3 className="text-2xl font-bold text-[#09090B] mb-1">Operations Staff</h3>
+                <p className="text-xs text-[#71717A] mb-6">
+                  Quotations, Contracts &amp; Cash Reconciliation
                 </p>
 
-                <div className="space-y-3 text-[13px] text-gray-600 mb-6">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <div className="flex items-baseline gap-1 pb-6 mb-6 border-b border-[#E4E4E7]">
+                  <span className="font-mono text-3xl font-bold text-[#09090B] tabular-nums">Multi-Line</span>
+                  <span className="text-xs text-[#71717A] font-mono">/Quotations</span>
+                </div>
+
+                <div className="space-y-3 mb-8 text-[13px] text-[#47464A]">
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Dynamic multi-line quotes with live math</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                    <span>Lifecycle: Draft → Quotation → Active → Paused</span>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>State Machine: Draft → Quotation → Active → Paused</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>B2B wire payment recording &amp; statement print</span>
                   </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="w-full bg-neutral-900 hover:bg-black text-white font-medium py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Launch Operations Deck</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div>
+                <button
+                  type="button"
+                  className="w-full h-11 rounded-full bg-black text-white font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-neutral-800 transition-all cursor-pointer active:scale-95 shadow-xs"
+                >
+                  <span>Launch Operations Deck</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Persona 3: Customer Tenant */}
             <div
               onClick={() => setPersona('customer', 'finance@acmeglobal.com', 'Brightloop@2026!')}
-              className={`bg-white rounded-2xl p-7 border transition-all cursor-pointer floating-card flex flex-col justify-between ${
+              className={`flex flex-col justify-between p-8 rounded-xl bg-[#FFFFFF] border transition-all cursor-pointer floating-card ${
                 selectedRole === 'customer'
                   ? 'border-black ring-2 ring-black/5 shadow-md'
-                  : 'border-gray-200/80 hover:border-gray-300 shadow-xs'
+                  : 'border-[#E4E4E7] hover:border-[#71717A]/40 shadow-xs'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 bg-neutral-800 text-white rounded-xl flex items-center justify-center font-bold">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-[#71717A]">
+                    Persona 03
+                  </span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
                     customer
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">Customer Tenant</h3>
-                <p className="text-xs text-gray-500 mt-1 mb-6">
-                  Acme Global Logistics Self-Service
+                <h3 className="text-2xl font-bold text-[#09090B] mb-1">Customer Tenant</h3>
+                <p className="text-xs text-[#71717A] mb-6">
+                  Acme Global Logistics Self-Service Portal
                 </p>
 
-                <div className="space-y-3 text-[13px] text-gray-600 mb-6">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <div className="flex items-baseline gap-1 pb-6 mb-6 border-b border-[#E4E4E7]">
+                  <span className="font-mono text-3xl font-bold text-[#09090B] tabular-nums">Isolated</span>
+                  <span className="text-xs text-[#71717A] font-mono">/Tenant View</span>
+                </div>
+
+                <div className="space-y-3 mb-8 text-[13px] text-[#47464A]">
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Isolated tenant security: Acme Global Logistics</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Self-service pause/resume subscription control</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Official B2B tax invoice PDF generation</span>
                   </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="w-full bg-neutral-900 hover:bg-black text-white font-medium py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Launch Customer Portal</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div>
+                <button
+                  type="button"
+                  className="w-full h-11 rounded-full border border-[#E4E4E7] bg-[#FFFFFF] text-[#09090B] font-medium text-xs flex items-center justify-center gap-1.5 hover:border-[#09090B] transition-all cursor-pointer active:scale-95"
+                >
+                  <span>Launch Customer Portal</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* 4. DIRECT CREDENTIALS AUTHENTICATION SECTION */}
-      <section className="py-20 bg-white px-4" id="auth">
+      <section className="py-20 bg-[#FFFFFF] px-4 border-b border-[#E4E4E7]" id="auth">
         <div className="max-w-md mx-auto">
           {/* Card Frame */}
-          <div className="bg-white rounded-2xl border border-gray-200/90 p-8 shadow-sm">
+          <div className="bg-[#FFFFFF] rounded-2xl border border-[#E4E4E7] p-8 shadow-xs">
             {/* Toggle Sign In / Register */}
-            <div className="flex rounded-full bg-gray-100 p-1 mb-6 border border-gray-200/80">
+            <div className="flex rounded-full bg-[#F3F3F4] p-1 mb-6 border border-[#E4E4E7]">
               <button
                 type="button"
                 onClick={() => {
@@ -357,7 +463,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   setErrorMsg(null);
                 }}
                 className={`flex-1 rounded-full py-1.5 text-xs font-semibold transition cursor-pointer ${
-                  mode === 'signin' ? 'bg-black text-white shadow-xs' : 'text-gray-600 hover:text-black'
+                  mode === 'signin' ? 'bg-black text-white shadow-xs' : 'text-[#71717A] hover:text-black'
                 }`}
               >
                 Sign In
@@ -369,7 +475,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   setErrorMsg(null);
                 }}
                 className={`flex-1 rounded-full py-1.5 text-xs font-semibold transition cursor-pointer ${
-                  mode === 'register' ? 'bg-black text-white shadow-xs' : 'text-gray-600 hover:text-black'
+                  mode === 'register' ? 'bg-black text-white shadow-xs' : 'text-[#71717A] hover:text-black'
                 }`}
               >
                 Create Account
@@ -386,75 +492,75 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Full Name</label>
+                  <label className="block text-xs font-semibold text-[#1A1C1D] mb-1.5">Full Name</label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3.5 top-3 h-4 w-4 text-[#71717A]" />
                     <input
                       type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Sarah Connor"
-                      className="w-full rounded-xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-xs font-medium text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none transition-colors"
+                      className="w-full rounded-xl border border-[#E4E4E7] pl-10 pr-3.5 py-2.5 text-xs font-medium text-[#1A1C1D] placeholder-[#A1A1AA] focus:border-black focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Email Address</label>
+                <label className="block text-xs font-semibold text-[#1A1C1D] mb-1.5">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3.5 top-3 h-4 w-4 text-[#71717A]" />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="user@brightloop.io"
-                    className="w-full rounded-xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-xs font-medium text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none transition-colors"
+                    className="w-full rounded-xl border border-[#E4E4E7] pl-10 pr-3.5 py-2.5 text-xs font-medium text-[#1A1C1D] placeholder-[#A1A1AA] focus:border-black focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-gray-700">Password</label>
+                  <label className="block text-xs font-semibold text-[#1A1C1D]">Password</label>
                   {mode === 'signin' && (
                     <button
                       type="button"
                       onClick={() => setShowForgotModal(true)}
-                      className="text-[11px] text-gray-500 hover:text-black transition-colors cursor-pointer"
+                      className="text-[11px] text-[#71717A] hover:text-black transition-colors cursor-pointer"
                     >
                       Forgot password?
                     </button>
                   )}
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3.5 top-3 h-4 w-4 text-[#71717A]" />
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full rounded-xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-xs font-medium text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none transition-colors"
+                    className="w-full rounded-xl border border-[#E4E4E7] pl-10 pr-3.5 py-2.5 text-xs font-medium text-[#1A1C1D] placeholder-[#A1A1AA] focus:border-black focus:outline-none transition-colors"
                   />
                 </div>
 
                 {/* Password Criteria indicators when registering */}
                 {mode === 'register' && (
-                  <div className="mt-2.5 space-y-1 bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-[10px]">
-                    <div className="font-semibold text-gray-600 mb-1">Password Requirements:</div>
-                    <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                  <div className="mt-2.5 space-y-1 bg-[#F7F7F8] p-2.5 rounded-lg border border-[#E4E4E7] text-[10px]">
+                    <div className="font-semibold text-[#71717A] mb-1">Password Requirements:</div>
+                    <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-600 font-semibold' : 'text-[#71717A]'}`}>
                       <Check className="h-3 w-3" /> Minimum 8 characters
                     </div>
-                    <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                    <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-600 font-semibold' : 'text-[#71717A]'}`}>
                       <Check className="h-3 w-3" /> Uppercase letter
                     </div>
-                    <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                    <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-600 font-semibold' : 'text-[#71717A]'}`}>
                       <Check className="h-3 w-3" /> Lowercase letter
                     </div>
-                    <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                    <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-600 font-semibold' : 'text-[#71717A]'}`}>
                       <Check className="h-3 w-3" /> Special symbol (!@#$...)
                     </div>
                   </div>
@@ -463,11 +569,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
               {mode === 'register' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Account Role</label>
+                  <label className="block text-xs font-semibold text-[#1A1C1D] mb-1.5">Account Role</label>
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-medium text-gray-900 focus:border-black focus:outline-none transition-colors bg-white cursor-pointer"
+                    className="w-full rounded-xl border border-[#E4E4E7] px-3.5 py-2.5 text-xs font-medium text-[#1A1C1D] focus:border-black focus:outline-none transition-colors bg-white cursor-pointer"
                   >
                     <option value="admin">Administrator (Catalog & Finance)</option>
                     <option value="staff">Operations Staff (Quotes & Ledger)</option>
@@ -501,62 +607,62 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       </section>
 
       {/* 5. ARCHITECTURE BENTO GRID SECTION */}
-      <section className="py-20 bg-gray-50/70 border-t border-gray-100 px-4 sm:px-6" id="features">
+      <section className="py-20 bg-[#F9F9FA] px-4 sm:px-6" id="architecture">
         <div className="max-w-[1240px] mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-[50px] font-bold tracking-tight text-neutral-900 leading-[1.1]">
+            <h2 className="text-3xl md:text-[48px] font-bold tracking-tight text-[#09090B] leading-[1.1]">
               Engine Architecture &amp; Invariants
             </h2>
-            <p className="text-gray-500 text-[15px] mt-2 max-w-xl mx-auto">
+            <p className="text-[#71717A] text-[15px] mt-2 max-w-xl mx-auto">
               Engineered with strict invariant math, deterministic clock simulation, and real SQLite persistence.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1 */}
-            <div className="bg-white rounded-2xl p-7 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-[#FFFFFF] rounded-2xl p-7 border border-[#E4E4E7] shadow-xs flex flex-col justify-between floating-card">
               <div>
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mb-4 text-black font-bold">
+                <div className="w-9 h-9 rounded-lg bg-[#F7F7F8] border border-[#E4E4E7] flex items-center justify-center mb-4 text-black font-bold">
                   <Calendar className="w-4 h-4" />
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">Deterministic TimeMachine</h3>
-                <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                <h3 className="text-lg font-bold text-[#09090B] mb-2">Deterministic TimeMachine</h3>
+                <p className="text-xs text-[#71717A] leading-relaxed mb-6">
                   Advance the simulation clock by +1d, +7d, or +30d. Idempotent billing evaluation guarantees zero duplicate invoices for identical billing windows.
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 font-mono text-[11px] text-gray-700">
+              <div className="bg-[#F7F7F8] border border-[#E4E4E7] rounded-xl p-3 font-mono text-[11px] text-[#09090B]">
                 <span>cycle: evaluate_subscriptions(sim_date)</span>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="bg-white rounded-2xl p-7 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-[#FFFFFF] rounded-2xl p-7 border border-[#E4E4E7] shadow-xs flex flex-col justify-between floating-card">
               <div>
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mb-4 text-black font-bold">
+                <div className="w-9 h-9 rounded-lg bg-[#F7F7F8] border border-[#E4E4E7] flex items-center justify-center mb-4 text-black font-bold">
                   <Sliders className="w-4 h-4" />
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">Dynamic Pricing Formulas</h3>
-                <p className="text-xs text-gray-500 leading-relaxed mb-6">
-                  Every product line item evaluates: <code className="bg-gray-100 px-1 py-0.5 rounded text-black font-mono">Unit Price = Base Price + Σ(Modifier ΔP)</code>. Zero hardcoded quotes.
+                <h3 className="text-lg font-bold text-[#09090B] mb-2">Dynamic Pricing Formulas</h3>
+                <p className="text-xs text-[#71717A] leading-relaxed mb-6">
+                  Every product line item evaluates: <code className="bg-[#EEEEEF] px-1 py-0.5 rounded text-black font-mono">Unit Price = Base + Σ(ΔP)</code>. Zero hardcoded quotes.
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 font-mono text-[11px] text-gray-700">
+              <div className="bg-[#F7F7F8] border border-[#E4E4E7] rounded-xl p-3 font-mono text-[11px] text-[#09090B]">
                 <span>rule: unit_price = base + sum(delta_p)</span>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="bg-white rounded-2xl p-7 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-[#FFFFFF] rounded-2xl p-7 border border-[#E4E4E7] shadow-xs flex flex-col justify-between floating-card">
               <div>
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mb-4 text-black font-bold">
+                <div className="w-9 h-9 rounded-lg bg-[#F7F7F8] border border-[#E4E4E7] flex items-center justify-center mb-4 text-black font-bold">
                   <Receipt className="w-4 h-4" />
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">B2B Tax Invoicing &amp; Cash</h3>
-                <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                <h3 className="text-lg font-bold text-[#09090B] mb-2">B2B Tax Invoicing &amp; Cash</h3>
+                <p className="text-xs text-[#71717A] leading-relaxed mb-6">
                   Itemized tax breakdowns (GST/VAT 18%), wire transfer reference details, and instant balance reconciliation with printable PDF output.
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 font-mono text-[11px] text-gray-700">
+              <div className="bg-[#F7F7F8] border border-[#E4E4E7] rounded-xl p-3 font-mono text-[11px] text-[#09090B]">
                 <span>balance = total_amount - amount_paid</span>
               </div>
             </div>
@@ -564,20 +670,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
       </section>
 
-      {/* 6. TESTIMONIAL QUOTE */}
-      <section className="py-20 bg-white text-center px-4">
-        <div className="max-w-3xl mx-auto flex flex-col items-center">
-          <blockquote className="text-2xl md:text-[34px] leading-[1.25] font-semibold text-neutral-900 tracking-[-0.02em] mb-8">
-            “Being able to run deterministic billing simulations and test multi-tier contract changes without dummy data transforms recurring revenue operations.”
-          </blockquote>
-          <div className="flex flex-col items-center">
-            <cite className="not-italic font-bold text-neutral-900 text-sm">Brightloop Systems Architecture</cite>
-            <span className="text-xs text-gray-400 mt-0.5">High-Velocity B2B Recurring Revenue</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. DARK CONSOLE FOOTER */}
+      {/* 6. DARK CONSOLE FOOTER */}
       <footer className="bg-[#0C0C0C] text-white pt-20 pb-16 relative overflow-hidden">
         {/* Giant Background Watermark "Brightloop" */}
         <div className="absolute bottom-[-40px] left-1/2 transform -translate-x-1/2 select-none pointer-events-none opacity-[0.03] text-[220px] font-black tracking-tighter whitespace-nowrap text-white">
