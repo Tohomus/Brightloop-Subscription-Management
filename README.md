@@ -1,360 +1,327 @@
-# ⚡ Brightloop Subscription Management
+# Brightloop Subscription Management
 
-> **Enterprise-Grade Recurring Billing, Contract State Machine & Financial Telemetry Platform**  
-> *Developed for the Odoo × CUSAT Make-a-ton 2.0 Hackathon Challenge*
+Deterministic Recurring Billing, State-Machine Contract Lifecycle, and Financial Telemetry Engine.  
+Built for the Odoo × CUSAT Make-a-ton 2.0 Hackathon.
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI%200.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%208.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/Language-TypeScript%20%7C%20Python-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![TailwindCSS](https://img.shields.io/badge/Design%20System-Tailwind%20CSS%203.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![SQLite](https://img.shields.io/badge/Database-SQLite%20(WAL%20Engine)-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Oxlint](https://img.shields.io/badge/Code%20Quality-Oxlint%20(0%20Warnings)-00C853?style=for-the-badge)](https://oxc.rs/)
-
----
-
-## 📌 Table of Contents
-
-1. [Why Brightloop? (The Value Proposition)](#-why-brightloop-the-value-proposition)
-2. [Facilities & Core Resources Provided](#-facilities--core-resources-provided)
-3. [Architecture & Technology Stack](#-architecture--technology-stack)
-4. [Project & File Structure](#-project--file-structure)
-5. [Local Development & Uvicorn Setup](#-local-development--uvicorn-setup)
-6. [Pre-Seeded Demo Accounts & Credentials](#-pre-seeded-demo-accounts--credentials)
-7. [Git Branching Strategy & Contribution Rules](#-git-branching-strategy--contribution-rules)
-8. [2-Minute Judge Screening Walkthrough Script](#-2-minute-judge-screening-walkthrough-script)
-9. [Team Credits & Copyright](#-team-credits--copyright)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI%200.115-009688?style=flat)](https://fastapi.tiangolo.com/)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%208.3-61DAFB?style=flat)](https://react.dev/)
+[![Language](https://img.shields.io/badge/Language-TypeScript%20%2B%20Python%203.13-3178C6?style=flat)](https://www.typescriptlang.org/)
+[![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-38B2AC?style=flat)](https://tailwindcss.com/)
+[![Database](https://img.shields.io/badge/Database-SQLite%20(WAL%20Mode)-003B57?style=flat)](https://www.sqlite.org/)
+[![Tests](https://img.shields.io/badge/Tests-Pytest%20Passing-00C853?style=flat)](https://docs.pytest.org/)
 
 ---
 
-## 💡 Why Brightloop? (The Value Proposition)
+## Executive Summary
 
-Traditional subscription management software (e.g., Stripe Billing, Chargebee, Recurly) is heavily **transaction-centric**: they treat subscriptions as raw billing schedules without contextual understanding of customer relationships, custom quote workflows, or multi-line product variants. 
+Brightloop replaces disconnected spreadsheets, manual bank slip reconciliation, and fragile billing scripts with a single source of truth for subscription operations. 
 
-**Brightloop** is built around **relationship-first subscription commerce**:
-
-### 🌟 What Makes Brightloop Essential for Every Growing Business?
-
-* **Zero-Duplicate Idempotent Billing Engine:** Traditional cron-based recurring billing often duplicates invoices during network timeouts or retry loops. Brightloop enforces a strict composite idempotency key (`${subscription_id}_${target_date}`). Even if a billing run is triggered ten times on the same date, only **one single invoice** will ever be generated.
-* **The Chrono-Simulator ("Billing Time Machine"):** Testing recurring billing usually requires mocking server clocks or waiting weeks. Brightloop features an integrated **Time Machine widget** (`+1 Day`, `+7 Days`, `+30 Days`) that allows finance teams and developers to fast-forward system time and evaluate invoice generation, payment due dates, and aging delinquency in real-time.
-* **Sub-2-Second Executive Telemetry SLA:** Live analytical rollups calculate Monthly Recurring Revenue (MRR), Annual Run-Rate (ARR), settled revenue, and overdue receivables in $< 2.0\text{s}$ response times without slowing down transactional OLTP queries.
-* **Granular Product Variant Pricing:** Add complex software tiers and add-ons effortlessly. Products support attribute surcharges (e.g., base SaaS price of $\$1,200.00$ automatically adds $+\$560.00$ when the **Odoo ERP Sync** variant is toggled).
-* **Upflow.io-Inspired Minimalist Aesthetic:** Say goodbye to cluttered, dated enterprise software. Brightloop features a floating midnight pill navbar (`#0B0F19`), electric cobalt gradient accents (`#242DB8 → #3B49DF`), clean `#FAFBFD` workspace surfaces, and tabular `font-mono` numbers for error-free accounting readability.
-* **Dual-Mode Client Resilience:** The frontend seamlessly communicates with the live FastAPI backend, but includes an intelligent offline in-memory fallback layer. Even if the backend server is temporarily restarted, the UI remains 100% interactive.
+Subscription companies lose between 5% and 15% of annual recurring revenue through untracked mid-cycle pauses, missed renewals, manual invoice drafting, and silent double-billing errors. Brightloop automates the entire contract lifecycle—from multi-variant quotation drafting to idempotent billing execution, automated tax and discount calculation, and accounts receivable reconciliation—with zero external daemon dependencies.
 
 ---
 
-## 🏢 Facilities & Core Resources Provided
+## The 2-Minute Judging Pitch & Live Demo Script
 
-Brightloop provides an end-to-end operational suite spanning the entire recurring revenue lifecycle:
+Judges evaluate multiple projects in rapid succession. This script delivers a working, verified end-to-end flow without slides.
 
+### Minute 0:00 - 0:30 | The Ground Truth & Executive Overview
+- **Opening Statement:**  
+  *"Subscription companies constantly leak revenue through manual spreadsheets, forgotten renewals, and double-billing errors. Brightloop is an automated, idempotent subscription lifecycle engine that guarantees exact billing day execution with zero human touch."*
+- **Action:** Open the **Executive Dashboard** (`/`).
+- **Showcase:**  
+  - Real-time aggregation of Monthly Recurring Revenue (MRR), Annual Run Rate (ARR), Total Cash Collected, and Outstanding Receivables.
+  - Aging receivables buckets (1–30 days, 31–60 days, 60+ critical days) computed directly from SQLite tables with sub-second response times.
+
+### Minute 0:30 - 1:15 | The Hero Workflow (Quotation to Cash)
+1. **Catalog & Dynamic Variant Pricing (`/catalog`):**
+   - Demonstrate a software product (base price \$1,200.00) configured with dynamic attribute variants (e.g. `Edition: Odoo Sync` adding +\$560.00). The engine calculates the line price dynamically:  
+     $$\text{Unit Price} = P_{\text{base}} + \Delta P_{\text{variant}} = \$1{,}200.00 + \$560.00 = \$1{,}760.00$$
+2. **Quotation Generation & Activation (`/subscriptions`):**
+   - Draft a multi-line offer for a corporate client.
+   - Confirm the quotation into an active contract. Show the state machine transition:  
+     $$\text{Quotation} \longrightarrow \text{Active}$$
+3. **The Chrono-Simulator ("Billing Time Machine"):**
+   - Advance the system simulation clock by +30 days.
+   - The backend billing runner evaluates active subscriptions, detects due billing dates, and generates confirmed draft invoices with applied tax and discount rules.
+   - Re-triggering the billing run demonstrates strict **idempotency**: duplicate runs skip already-billed cycles with zero duplicate charges.
+4. **Payment Registration & Ledger Reconciliation (`/invoices`):**
+   - Record an electronic payment against an open invoice.
+   - Watch the invoice status flip to `Paid` in real-time, instantly reducing Outstanding Receivables and increasing Cash Collected on the Executive Dashboard.
+
+### Minute 1:15 - 1:45 | Technical Architecture & Defensibility
+- **Composite Key Idempotency:** Billing runs enforce unique constraint keys `${subscription_id}_${period_start}`. Network timeouts or parallel runs never double-bill.
+- **Contract State Engine:** Subscriptions adhere to a strict state machine (`Draft -> Quotation -> Confirmed -> Active <-> Paused -> Closed`). Resuming paused accounts advances the billing anchor forward to avoid retroactively charging for paused periods.
+- **Strict Role Boundaries:** Multi-tenant customer portal (`/portal`) enforces database-level tenant isolation. Customers view and download only their own contracts and letterhead invoices.
+- **Zero-Daemon Architecture:** Fully functional with local Python and SQLite WAL mode. No Redis, Celery, PostgreSQL, or enterprise ERP daemons required.
+
+### Minute 1:45 - 2:00 | Conclusion
+- **Closing Statement:**  
+  *"Brightloop delivers enterprise-grade billing logic in a lightweight, self-contained architecture. It is resilient, audit-proof, and production-ready."*
+
+---
+
+## Technical Highlights & Mathematical Models
+
+### 1. Subscription Lifecycle State Machine
+
+The contract engine enforces valid transitions at the database model and API levels:
+
+```text
+               +-------------------------------------------+
+               |                                           |
+               v                                           |
+[ Draft ] ---> [ Quotation ] ---> [ Confirmed ] ---> [ Active ] <---> [ Paused ]
+     |              |                  |                |                  |
+     +--------------+------------------+----------------+------------------+
+                                       |
+                                       v
+                                   [ Closed ]  (Terminal)
 ```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│ Product Catalog │ ───► │  Quotes Builder │ ───► │ Contract State  │ ───► │ Idempotent Run  │
-│  & Variant S/C  │      │ & PDF Inspector │      │     Machine     │      │  & Ledger Sync  │
-└─────────────────┘      └─────────────────┘      └─────────────────┘      └─────────────────┘
-                                                                                    │
-                                                                                    ▼
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│ Customer Portal │ ◄─── │ Payment Receipt │ ◄─── │ Overdue Aging   │ ◄─── │ Executive Tele- │
-│ & Self-Service  │      │ & Reconciler    │      │ 30/60/90d Risk  │      │ metry (< 2s SLA)│
-└─────────────────┘      └─────────────────┘      └─────────────────┘      └─────────────────┘
-```
 
-### 1. Catalog & Variant Engine (`/admin/products`)
-* **Product Classification:** Define `Software`, `Service`, and `Addon` line items.
-* **Variant Attribute Matrix:** Configure attribute pricing (e.g., Edition, SLA speed, Seat tier) with dynamic margin analysis.
-* **Plan Governance:** Define Daily, Weekly, Monthly, and Yearly intervals with minimum order quantities, trial windows, and auto-close flags.
+- **Quotation Direct Close:** Sales reps can close rejected or lost quotations directly without requiring artificial confirmation.
+- **Safe Pause & Resume:** When unpausing a subscription (`Paused -> Active`), the backend automatically updates `next_billing_date` to the current date if the pause period lapsed, preventing retroactive billing for paused months.
+- **Safe Contract Termination:** Closing an active or paused contract voids open, unconfirmed draft invoices and releases reserved promotional coupon usage.
 
-### 2. Quotation Builder & Contract State Machine (`/staff/subscriptions`)
-* **Multi-Line Quotations:** Sales reps can draft proposals with multiple products, custom discounts, and payment terms (Immediate, Net 15, Net 30).
-* **Strict State Machine:** Governs subscription lifecycle transitions:
-  $$\text{Draft} \longrightarrow \text{Quotation} \longrightarrow \text{Confirmed} \longrightarrow \text{Active} \longleftrightarrow \text{Paused} \longrightarrow \text{Closed}$$
-* **Audit Inspector:** Detailed slide-over drawer showing cycle dates, contract duration, customer contact, and line items.
+### 2. Tax & Discount Engine
 
-### 3. Automated Billing Day Runner (`/api/billing/run`)
-* **Automated Cycle Evaluation:** Evaluates all active subscriptions due on or before target date.
-* **Automated Taxes & Discounts:** Computes percentage/fixed taxes (e.g., GST 18%, Digital Services 5%) and discounts (volume thresholds, product promos) directly onto invoice draft lines.
-* **Idempotency Guarantee:** Skips already-billed subscriptions with zero side-effects.
+The billing runner calculates line-item and header adjustments with cent-level decimal precision:
 
-### 4. Invoicing Ledger & Payment Reconciliation (`/staff/invoices`)
-* **Status Tracking:** Tracks invoices through `Draft`, `Confirmed`, `Partially Paid`, `Paid`, `Overdue`, and `Cancelled`.
-* **Instant Payment Modal:** Record payments via Bank Transfer, Credit Card, UPI, or Cash with automatic balance recalculation.
-* **Printable Invoice PDF:** Built-in letterhead invoice preview ready for printing or saving as PDF with zero third-party dependencies.
+- **Price-Exclusive Tax:**
+  $$\text{Tax Amount} = (\text{Line Subtotal} - \text{Discount}) \times \frac{\text{Rate}}{100}$$
+  $$\text{Line Total} = (\text{Line Subtotal} - \text{Discount}) + \text{Tax Amount}$$
 
-### 5. Executive Telemetry Dashboard (`/admin/dashboard`)
-* **Real-time KPI Cards:** MRR, ARR, Total Settled Cash, and Outstanding Accounts Receivable.
-* **Overdue Aging Analysis:** Visual delinquency buckets ($1\text{--}30$ days, $31\text{--}60$ days, $60+$ days critical).
-* **30/60/90-Day Predictive Cashflow Forecaster:** Analyzes recurring commitment frequencies to project quarterly runway.
+- **Price-Included Tax:**
+  $$\text{Tax Amount} = (\text{Line Subtotal} - \text{Discount}) \times \frac{\text{Rate}}{100 + \text{Rate}}$$
+  $$\text{Line Total} = \text{Line Subtotal} - \text{Discount}$$
 
-### 6. Customer Self-Service Portal (`/portal`)
-* **Multi-Tenant Isolation:** Authenticated customer accounts view strictly their own subscriptions and invoices.
-* **Self-Service Controls:** Customers can pause or reactivate subscriptions and download official tax receipts.
+- **Discount Coupon Reservation:**
+  - Product-scope discounts apply directly to designated line items.
+  - Subscription-scope discounts apply to the net subtotal before tax.
+  - Coupon usage (`rule.uses`) increments upon draft invoice generation and decrements immediately if the invoice is cancelled, preventing quota lockouts.
+
+### 3. Chrono-Simulator ("Billing Time Machine")
+
+To enable live evaluations without waiting weeks for calendar triggers, Brightloop includes a persistent simulation clock:
+- System time can be advanced via API (`POST /api/simulation/time-travel`) or UI controls (`+1 Day`, `+7 Days`, `+30 Days`).
+- The clock state persists in SQLite table `system_clock` across server restarts.
+- Auto-aging reconciles invoices against the simulated date: past-due invoices automatically transition to `Overdue` status.
 
 ---
 
-## 🛠️ Architecture & Technology Stack
-
-| Layer | Technology | Version | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Frontend Framework** | **React** | `19.3` | Reactive, component-based user interface |
-| **Build Tool** | **Vite** | `8.3` | Instant HMR and sub-second production builds |
-| **Language (Web)** | **TypeScript** | `7.0` | Strict type-safety across models and contracts |
-| **Routing** | **React Router** | `7.18` | Declarative client-side routing & route guards |
-| **Styling** | **Tailwind CSS** | `3.4` | Upflow-inspired design system & utility classes |
-| **Icons** | **Lucide React** | `1.65` | Consistent, accessible feather iconography |
-| **Linter** | **Oxlint** | `1.89` | High-speed Rust-based linter (0 warnings, 0 errors) |
-| **Backend Framework** | **FastAPI** | `0.115` | High-performance async REST API framework |
-| **ASGI Server** | **Uvicorn** | `0.32` | Production-ready ASGI server |
-| **ORM / Data Layer** | **SQLModel** | `0.0.22` | Unified SQLAlchemy + Pydantic v2 data models |
-| **Authentication** | **PyJWT + Passlib** | `2.9` / `1.7` | Salted bcrypt password hashing & JWT token issuance |
-| **Database** | **SQLite** | `3.x` | Embedded zero-configuration SQL database with WAL mode |
-
----
-
-## 📂 Project & File Structure
+## System Architecture
 
 ```text
 Brightloop-Subscription-Management/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                   # REST API Routers
-│   │   │   ├── auth.py            # Registration, login, password reset endpoints
-│   │   │   ├── billing.py         # POST /api/billing/run, tax & discount management
-│   │   │   ├── dashboard.py       # Aggregated executive telemetry (< 2s SLA)
-│   │   │   ├── invoices.py        # Invoices query, confirmation, cancel endpoints
-│   │   │   ├── payments.py        # Payment recording & AR reconciliation
-│   │   │   ├── plans.py           # Subscription plans & quotation templates
-│   │   │   ├── products.py        # Product CRUD & variant price adjustments
-│   │   │   └── subscriptions.py   # State machine, quotation drafting & conversions
-│   │   ├── core/                  # Core infrastructure
-│   │   │   ├── database.py        # SQLite engine, connection pragmas (WAL mode)
-│   │   │   └── security.py        # Bcrypt password hashing, JWT encoder/decoder
-│   │   ├── models/                # SQLModel database tables
-│   │   │   ├── auth.py            # User and UserRole models
-│   │   │   ├── billing.py         # Subscription, SubscriptionLine, Tax, Discount
-│   │   │   ├── catalog.py         # Product, ProductVariant, Plan, QuoteTemplate
-│   │   │   └── invoicing.py       # Invoice, InvoiceLine, Payment
-│   │   ├── schemas/               # Pydantic validation request/response schemas
-│   │   ├── services/              # Core business engines
-│   │   │   ├── billing_runner.py  # Idempotent recurring billing engine
-│   │   │   └── tax_discount_calc.py # Compound tax and discount calculators
-│   │   └── main.py                # FastAPI app initialization, CORS, health check
-│   ├── tests/                     # Automated test suites
-│   ├── seed.py                    # Complete realistic database seeder
-│   └── requirements.txt           # Python backend dependencies
+│   │   ├── api/                    # REST API Route Controllers
+│   │   │   ├── auth.py             # User registration, login, JWT issuance
+│   │   │   ├── billing.py          # Manual billing runner triggers, taxes, discounts
+│   │   │   ├── dashboard.py        # Executive revenue metrics (< 2s SLA), clock
+│   │   │   ├── invoices.py         # Invoice serialization, confirmation, cancellation
+│   │   │   ├── payments.py         # Payment recording & AR reconciliation
+│   │   │   ├── plans.py            # Plan frequencies, minimum order quantities
+│   │   │   ├── products.py         # Product CRUD & variant pricing modifiers
+│   │   │   └── subscriptions.py    # State engine, quotations, contract lifecycle
+│   │   ├── core/
+│   │   │   ├── database.py         # SQLite connection with WAL mode & foreign keys
+│   │   │   └── security.py         # Bcrypt password hashing & JWT token validation
+│   │   ├── models/                 # SQLModel database tables
+│   │   ├── schemas/                # Pydantic v2 validation contracts
+│   │   ├── services/
+│   │   │   ├── billing_runner.py   # Idempotent recurring invoice generator
+│   │   │   └── tax_discount_calc.py# Cent-level decimal tax and discount math
+│   │   └── main.py                 # FastAPI application mount, CORS middleware
+│   ├── tests/                      # Pytest automated test suite
+│   ├── seed.py                     # Realistic database seeder
+│   └── requirements.txt            # Locked Python backend dependencies
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/            # Reusable UI components
-│   │   │   ├── Navbar.tsx         # Floating midnight pill navigation & persona switcher
-│   │   │   ├── Sidebar.tsx        # Vertical operations rail with live badge status
-│   │   │   ├── TimeMachine.tsx    # Chrono-Simulator (+1, +7, +30 days widget)
-│   │   │   └── InvoicePrintModal.tsx # Printable letterhead invoice layout
-│   │   ├── pages/                 # Full-page views
-│   │   │   ├── ExecutiveDashboard.tsx # Executive revenue telemetry & aging buckets
-│   │   │   ├── CatalogPage.tsx    # Products, variants, and plans catalog view
-│   │   │   ├── SubscriptionsPage.tsx # Quotations builder, contract state machine
-│   │   │   ├── InvoicesPage.tsx   # AR ledger, payment recorder, printable PDF
-│   │   │   ├── CustomerPortal.tsx # Isolated tenant self-service portal
-│   │   │   └── LoginPage.tsx      # Authentication, password reset & persona switcher
-│   │   ├── services/              # Client API communication
-│   │   │   ├── api.ts             # Typed REST client with offline mock fallback
-│   │   │   └── dashboardService.ts# Telemetry caching & real-time event subscriber
-│   │   ├── types/                 # Unified TypeScript data interfaces
-│   │   ├── App.tsx                # Application router, step stepper, health monitor
-│   │   ├── index.css              # Tailwind CSS styles & typography directives
-│   │   └── main.tsx               # Application mount entrypoint
-│   ├── package.json               # Frontend dependencies & npm scripts
-│   ├── tsconfig.json              # TypeScript compilation rules
-│   └── vite.config.ts             # Vite bundler configuration
+│   │   ├── components/             # Reusable UI primitives
+│   │   │   ├── Navbar.tsx          # Navigation header & persona selector
+│   │   │   ├── Sidebar.tsx         # Operational navigation rail
+│   │   │   ├── TimeMachine.tsx     # Chrono-Simulator controls (+1 / +7 / +30 days)
+│   │   │   └── InvoicePrintModal.tsx # Letterhead invoice printable modal
+│   │   ├── pages/                  # Page-level route views
+│   │   │   ├── ExecutiveDashboard.tsx # Revenue telemetry, MRR/ARR, overdue aging
+│   │   │   ├── CatalogPage.tsx     # Products, variants, plans, and templates
+│   │   │   ├── SubscriptionsPage.tsx # Multi-line quote builder & contract inspector
+│   │   │   ├── InvoicesPage.tsx    # AR ledger, payment recording, PDF view
+│   │   │   ├── CustomerPortal.tsx  # Isolated customer tenant portal
+│   │   │   └── LoginPage.tsx       # Authentication & role switcher
+│   │   ├── services/
+│   │   │   └── api.ts              # Typed API client with offline resilience
+│   │   ├── types/                  # TypeScript data interfaces
+│   │   ├── App.tsx                 # Route declarations & shell layout
+│   │   └── main.tsx                # Application bootstrap
+│   ├── package.json
+│   └── tsconfig.json
 │
-├── context/                       # Master guidelines and architectural contracts
-└── README.md                      # Comprehensive project documentation
+├── context/                        # Technical specifications & team guidelines
+└── README.md
 ```
 
 ---
 
-## 💻 Local Development & Uvicorn Setup
+## Quickstart & Local Setup
 
-Follow these exact steps to run the complete stack locally:
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ and npm 9+
 
-### 1. Prerequisites
-* **Python 3.11+** installed (`python --version`)
-* **Node.js 18+** and **npm** installed (`node --version`)
-* **Git** installed
-
----
-
-### 2. Backend Setup & Database Seeding
-
-Open a terminal in the root repository directory:
-
+### 1. Backend Setup
 ```bash
+# Navigate to backend directory
 cd backend
 
-# 1. Create and activate a Python virtual environment
+# Create and activate virtual environment
+# Windows PowerShell:
 python -m venv venv
-
-# On Windows PowerShell:
 .\venv\Scripts\Activate.ps1
-# On macOS / Linux:
+
+# Linux / macOS:
+# python3 -m venv venv
 # source venv/bin/activate
 
-# 2. Install all required Python backend dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 3. Seed the SQLite database with realistic demo data
+# Seed database with realistic demo accounts, products, and contracts
 python seed.py
 
-# 4. Start the FastAPI ASGI server with Uvicorn
+# Start the FastAPI backend server
 uvicorn app.main:app --reload --port 8000
 ```
+- API Base URL: `http://localhost:8000`
+- Interactive Swagger Documentation: `http://localhost:8000/docs`
+- ReDoc Documentation: `http://localhost:8000/redoc`
 
-#### Expected Backend Output:
-```text
-============================================================
-Brightloop Subscription Management - Database Seeder
-============================================================
-[1/6] Seeding Users...
-  + Added 4 Users (Admin, Staff, 2 Customers)
-[2/6] Seeding Products & Variants...
-  + Added 3 Products with 3 attribute variants (Odoo ERP Sync +$560)
-[3/6] Seeding Subscription Plans & Templates...
-  + Added 3 Subscription Plans (Monthly, Yearly, Weekly) + Quotation Template
-[4/6] Seeding Tax & Discount Rules...
-  + Added 2 Tax Rules & 2 Discount Rules
-[5/6] Seeding Subscriptions & Lifecycle States...
-  + Added 4 Subscriptions (Active, Paused, Quotation)
-[6/6] Seeding Invoices & Payments...
-  + Added 4 Invoices & reconciled payments
-============================================================
-[SUCCESS] Database successfully seeded at: database.db
-============================================================
-
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Application startup complete.
-```
-
-* **Interactive Swagger UI:** Visit [`http://localhost:8000/docs`](http://localhost:8000/docs)
-* **API Health Check:** Visit [`http://localhost:8000/health`](http://localhost:8000/health)
-
----
-
-### 3. Frontend Setup
-
-Open a second terminal window:
-
+### 2. Frontend Setup
 ```bash
+# In a separate terminal, navigate to frontend directory
 cd frontend
 
-# 1. Install frontend dependencies
+# Install dependencies
 npm install
 
-# 2. Run Oxlint code quality verification (Enforces 0 warnings)
-npm run lint
-
-# 3. Start the Vite development server
+# Start Vite development server
 npm run dev
 ```
+- Application Web Interface: `http://localhost:5173`
 
-* **Web Application:** Visit [`http://localhost:5173`](http://localhost:5173) in your browser.
-* In the bottom-right corner of the UI, notice the live health widget showing **`FastAPI Live :8000 • SQLite`** with a pulsing green indicator.
+### 3. Running Automated Tests
+```bash
+# From the repository root with backend venv activated:
+$env:PYTHONPATH="backend"; backend\venv\Scripts\pytest backend\tests -v
 
----
-
-## 👥 Pre-Seeded Demo Accounts & Credentials
-
-The system includes pre-configured personas to quickly evaluate Role-Based Access Control (RBAC):
-
-> **Universal Password for All Accounts:** `Brightloop@2026!`
-
-| Persona | Email | Role Claim | Accessible Features & Boundary |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@brightloop.io` | `admin` | Full system access: Catalog creation, Executive Telemetry, Subscriptions, Invoices, Billing Runner |
-| **Operations Staff**| `operations@brightloop.io` | `staff` | Quotation drafting, Contract lifecycle state machine, Invoicing ledger, Payment recording |
-| **Customer Tenant** | `finance@acmeglobal.com`| `customer` | Isolated Tenant Portal (`/portal`): views only Acme Global Logistics contracts & printable invoices |
-| **Secondary Customer**| `billing@apexrobotics.com`| `customer` | Alternate isolated tenant for verifying cross-customer data isolation |
-
-*(You can switch personas with a single click using the **Persona Capsule Dropdown** in the navbar or via the Quick Switcher on `/login`).*
-
----
-
-## 🌿 Git Branching Strategy & Contribution Rules
-
-To enable high-velocity team collaboration without merge conflicts, the repository enforces a structured git workflow:
-
-```text
-main (Stable Production Release)
-  ▲
-  │ (Pull Request after verification)
-  │
-dev (Shared Integration Branch)
-  ▲
-  ├── feature/backend-core-alan        (FastAPI foundation & Catalog)
-  ├── feature/billing-engine-abijith   (State machine & Idempotent billing runner)
-  ├── feature/frontend-core-thomas     (Operations UI, Navigation & API integration)
-  └── feature/dashboard-simulator-jeremy (Telemetry, Chrono-Simulator, Customer Portal)
+# Linux / macOS:
+# PYTHONPATH=backend pytest backend/tests -v
 ```
 
-### Contribution Rules
-1. **Never push directly to `main`:** All code integrates into `dev` and is promoted to `main` only after full end-to-end verification.
-2. **Strict File Boundaries:** Team members maintain isolated modules to prevent conflicting concurrent file edits.
-3. **Quality Gatekeeper Standard:**
-   - Every commit must pass `npm run lint` with **0 warnings and 0 errors**.
-   - Every commit must pass `npm run build` (`tsc -b && vite build`) cleanly.
-4. **Conventional Commit Standard:** Format commit messages with clear semantic scopes:
-   - `feat(catalog): add odoo erp variant price adjustment`
-   - `feat(billing): add idempotent cycle key to billing runner`
-   - `fix(frontend): resolve react effect dependency warning`
+---
+
+## Pre-Seeded Test Credentials
+
+The database seeder (`backend/seed.py`) provisions four pre-configured accounts representing distinct user personas:
+
+| Persona | Email | Password | Primary Capabilities |
+|---|---|---|---|
+| **Administrator** | `admin@brightloop.io` | `Brightloop@2026!` | Full system access: configure products, plans, tax/discount rules, run billing, inspect all contracts. |
+| **Operations Staff** | `operations@brightloop.io` | `Brightloop@2026!` | Operational access: create quotation templates, draft quotes, confirm contracts, record customer payments. |
+| **Customer (Acme Global)** | `finance@acmeglobal.com` | `Brightloop@2026!` | Self-service portal (`/portal`): view active contracts, pause subscriptions, review invoices, print PDFs. |
+| **Customer (Apex Robotics)** | `billing@apexrobotics.com` | `Brightloop@2026!` | Secondary tenant account for validating strict tenant isolation and row-level data access rules. |
 
 ---
 
-## 🎬 2-Minute Judge Screening Walkthrough Script
+## REST API Reference
 
-Follow this 5-step presentation script to demonstrate the platform to judges during screening:
+### Authentication (`/api/auth`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register new account with password regex validation ($\ge 8$ chars, upper, lower, special). |
+| `POST` | `/api/auth/login` | Authenticate user credentials and return signed JWT token with role claims. |
+| `POST` | `/api/auth/reset-password` | Request password reset token preview for registered email. |
+| `GET` | `/api/auth/me` | Retrieve profile of the currently authenticated user. |
 
-```
-[1. Executive Telemetry] ➔ [2. Odoo Variant Pricing] ➔ [3. Quote State Machine] ➔ [4. Chrono-Simulator Run] ➔ [5. Tenant Portal]
-```
+### Catalog: Products & Variants (`/api/products`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/products` | List all products with their associated dynamic attribute variants. |
+| `POST` | `/api/products` | Create a new product with base sales and cost prices. |
+| `GET` | `/api/products/{id}` | Retrieve product details by ID. |
+| `PATCH` | `/api/products/{id}` | Update product pricing or metadata. |
+| `DELETE` | `/api/products/{id}` | Soft-deactivate a product. |
+| `POST` | `/api/products/{id}/variants` | Add a dynamic pricing variant (e.g. `price_extra: +560.0`). |
+| `DELETE` | `/api/products/{id}/variants/{v_id}` | Remove a variant (blocked with 409 if active contracts reference it). |
 
-### Step 1: Executive Finance Telemetry (`/admin/dashboard`)
-* Log in as **Administrator** (`admin@brightloop.io`).
-* Highlight the top KPI rollup cards: MRR, ARR, and Cash Collected. Point out the **$< 2.0\text{s}$ SLA badge**.
-* Show the **Overdue Accounts Aging** chart: delinquent receivables automatically segmented into $1\text{--}30$d, $31\text{--}60$d, and $60+$ days critical buckets.
-* Highlight the **30/60/90-Day Cashflow Forecaster** projecting committed subscription renewals.
+### Plans & Quotation Templates (`/api/plans`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/plans` | List active plans filtered by frequency (`daily`, `weekly`, `monthly`, `yearly`). |
+| `POST` | `/api/plans` | Create a billing plan with minimum order quantity and auto-close flags. |
+| `GET` | `/api/plans/{id}` | Retrieve plan by ID. |
+| `DELETE` | `/api/plans/{id}` | Soft-deactivate a plan. |
+| `GET` | `/api/plans/templates/all` | List all reusable sales quotation templates. |
+| `POST` | `/api/plans/templates` | Create a quotation template with preset validity duration. |
 
-### Step 2: Catalog & Dynamic Variant Pricing (`/admin/products`)
-* Navigate to **Products & Plans Catalog**.
-* Click *Edit* on **Brightloop Enterprise Cloud Suite**.
-* Demonstrate the dynamic variant row: **Edition: Odoo ERP Sync** adding $+\$560.00$ on top of the base sales price. Show how gross margin automatically updates.
+### Subscriptions & Quotations (`/api/subscriptions`, `/api/quotations`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/subscriptions` | List subscriptions filtered by status or customer ID. |
+| `GET` | `/api/subscriptions/{id}` | Retrieve full contract details with line items. |
+| `PATCH` | `/api/subscriptions/{id}/status` | Execute state machine transition (`Active`, `Paused`, `Closed`). |
+| `DELETE` | `/api/subscriptions/{id}` | Delete unbilled contracts (blocked with 409 if invoices exist). |
+| `POST` | `/api/quotations` | Draft a new quotation with multi-line items. |
+| `POST` | `/api/quotations/{id}/confirm` | Confirm quotation into an active subscription. |
 
-### Step 3: Quotation Builder & State Machine (`/staff/subscriptions`)
-* Navigate to **Subscriptions**.
-* Click **Draft New Quotation** $\rightarrow$ select Acme Global Logistics, select Odoo ERP variant, set start date, and submit.
-* In the table, observe the new contract created in **`Quotation`** status.
-* Click **Confirm** $\rightarrow$ the contract immediately transitions to **`Active`** status via the backend state machine.
+### Invoices & Payments (`/api/invoices`, `/api/payments`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/invoices` | List invoices with auto-aging calculation against simulated date. |
+| `GET` | `/api/invoices/{id}` | Retrieve single invoice with line-item tax and discount breakdown. |
+| `POST` | `/api/invoices/{id}/confirm` | Confirm draft invoice (auto-marks \$0 total invoices as `Paid`). |
+| `POST` | `/api/invoices/{id}/cancel` | Cancel draft, confirmed, or unpaid overdue invoice; releases coupon reservations. |
+| `POST` | `/api/payments` | Record payment against invoice; prevents overpayment beyond remaining balance. |
 
-### Step 4: The Chrono-Simulator ("Billing Time Machine")
-* In the top hero banner or dashboard, locate the **Chrono-Simulator widget**.
-* Click **Advance +1 Day** (or **+30 Days**).
-* Watch the automated billing engine (`POST /api/billing/run`) evaluate active contracts and generate new draft invoices live in SQLite.
-* Click **Advance +1 Day** a second time for the same date $\rightarrow$ show that the `Skipped (idempotent)` counter increments, proving **zero duplicate charges**.
-
-### Step 5: Multi-Tenant Customer Portal (`/portal`)
-* Using the top navbar persona capsule, switch to **Customer Tenant (`finance@acmeglobal.com`)**.
-* Navigate to **My Portal** (`/portal`).
-* Point out strict tenant isolation: only Acme Global's contracts and invoices are visible.
-* Click **Print / Download PDF** on any invoice to display the clean, printable letterhead invoice preview.
+### Billing Engine & Simulation (`/api/billing`, `/api/dashboard`, `/api/simulation`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/billing/run` | Execute idempotent recurring billing run for specified date. |
+| `GET` | `/api/dashboard/summary` | Retrieve executive financial metrics (MRR, ARR, cash collected, aging). |
+| `POST` | `/api/simulation/time-travel` | Advance simulated system clock and trigger automatic billing cycle evaluation. |
 
 ---
 
-## 📄 Team Credits & Copyright
+## Anticipated Judge Questions & Technical Defenses
 
-Built with engineering pride for **Make-a-ton 2.0 (Odoo × CUSAT)** by:
+### Q1: How do you handle month-end billing when months have 28, 30, or 31 days?
+**Defense:** Billing cycles preserve the original anchor day (`subscription.start_date.day`). If a subscription starts on January 31, the February billing date clamps to February 28 (`min(31, 28)`), but the subsequent March billing date returns to March 31 rather than permanently drifting backwards.
 
-* **Alan John Thomas** — Backend Architecture, Auth & Catalog Core Lead
-* **Abijith P** — Financial State Machine, Billing Runner & Reconciliation Lead
-* **Jeremy Chehrehmi** — Executive Telemetry, Chrono-Simulator & Customer Portal Lead
-* **Thomas Raju** — Frontend Operations, UI Design System & Integration Lead
+### Q2: What happens if the billing runner crashes halfway through a run?
+**Defense:** Billing executions are transactional and idempotent. Every invoice carries a composite key `${subscription_id}_${period_start}`. Re-triggering the billing runner evaluates only unbilled cycles and skips already-created invoices, preventing duplicate charges or orphan line items.
 
-*Copyright © 2026 Brightloop Subscription Management. All rights reserved.*
+### Q3: How do you prevent customers from accessing other accounts' contracts?
+**Defense:** All routes are protected by server-side role middleware. The `/portal` endpoints force parameterized scoping where queries are strictly bounded by `customer_id == current_user.id`. Customers cannot inspect global tables or modify administrative parameters.
+
+### Q4: Why not simply use Stripe Billing or an off-the-shelf CRM?
+**Defense:** Stripe Billing handles payment gateway transactions, but does not manage internal enterprise operations such as cost-of-goods tracking (`cost_price`), gross margin calculation, custom staff quotation templates, or price-included municipal tax rules. Brightloop acts as the core subscription ERP, which can plug into any payment gateway.
+
+---
+
+## Team Work Split & Track Ownership
+
+Development was executed across parallel tracks with verified boundaries:
+
+- **Track 1: Authentication, RBAC & Catalog Engine**  
+  *Owner:* Alan  
+  FastAPI core setup, SQLite WAL engine, JWT authentication, password complexity rules, products CRUD with dynamic variant pricing, plans CRUD, database seeder.
+- **Track 2: Subscriptions State Engine & Billing Runner**  
+  *Owner:* Abijith  
+  Contract state machine (`Draft -> Quotation -> Confirmed -> Active <-> Paused -> Closed`), automated billing runner (`/api/billing/run`), decimal tax and discount engines, payment ledger reconciliation.
+- **Track 3: Operations Shell & Upflow Interface System**  
+  *Owner:* Thomas  
+  Application layout, navigation shell, Catalog views with margin calculations, multi-line Quotation Builder, Invoices ledger, payment registration modals.
+- **Track 4: Telemetry Analytics, Time Machine & Customer Portal**  
+  *Owner:* Jeremy  
+  Executive Finance Dashboard (< 2s SLA), Overdue Aging charts, persistent Chrono-Simulator ("Billing Time Machine"), multi-tenant Customer Portal (`/portal`), printable letterhead invoice layout.
