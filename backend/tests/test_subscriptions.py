@@ -225,4 +225,51 @@ def test_patch_status_active_enforces_min_quantity(client: TestClient):
     assert "below the plan minimum quantity" in patch_res.json()["detail"]
 
 
+def test_close_quotation_contract(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    q_resp = client.post(
+        "/api/quotations",
+        json={
+            "customer_id": user_id,
+            "plan_id": plan_id,
+            "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 2, "unit_price": 600.0}],
+        },
+    )
+    sub_id = q_resp.json()["id"]
+    assert q_resp.json()["status"] == "Quotation"
+
+    # Close the quotation directly (e.g. quote declined / closed)
+    close_resp = client.patch(f"/api/subscriptions/{sub_id}/status", json={"status": "Closed"})
+    assert close_resp.status_code == 200
+    assert close_resp.json()["status"] == "Closed"
+
+
+def test_close_active_subscription_cancels_draft_invoices(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "start_date": "2026-10-01", "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 2, "unit_price": 600.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    # Generate billing run to create a draft invoice
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    invoices = client.get(f"/api/invoices?customer_id={user_id}").json()
+    assert len(invoices) >= 1
+    inv_id = invoices[0]["id"]
+    assert invoices[0]["status"] == "Draft"
+
+    # Close the subscription
+    close_resp = client.patch(f"/api/subscriptions/{sub['id']}/status", json={"status": "Closed"})
+    assert close_resp.status_code == 200
+    assert close_resp.json()["status"] == "Closed"
+
+    # Verify that the unconfirmed draft invoice was cancelled
+    updated_inv = client.get(f"/api/invoices/{inv_id}").json()
+    assert updated_inv["status"] == "Cancelled"
+
+
+
 

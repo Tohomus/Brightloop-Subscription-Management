@@ -21,9 +21,9 @@ router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
 quotations_router = APIRouter(prefix="/api/quotations", tags=["quotations"])
 
 ALLOWED_TRANSITIONS = {
-    SubscriptionStatus.DRAFT: {SubscriptionStatus.QUOTATION},
-    SubscriptionStatus.QUOTATION: {SubscriptionStatus.CONFIRMED, SubscriptionStatus.ACTIVE},
-    SubscriptionStatus.CONFIRMED: {SubscriptionStatus.ACTIVE},
+    SubscriptionStatus.DRAFT: {SubscriptionStatus.QUOTATION, SubscriptionStatus.CLOSED},
+    SubscriptionStatus.QUOTATION: {SubscriptionStatus.CONFIRMED, SubscriptionStatus.ACTIVE, SubscriptionStatus.CLOSED},
+    SubscriptionStatus.CONFIRMED: {SubscriptionStatus.ACTIVE, SubscriptionStatus.CLOSED},
     SubscriptionStatus.ACTIVE: {SubscriptionStatus.PAUSED, SubscriptionStatus.CLOSED},
     SubscriptionStatus.PAUSED: {SubscriptionStatus.ACTIVE, SubscriptionStatus.CLOSED},
     SubscriptionStatus.CLOSED: set(),
@@ -216,6 +216,29 @@ def update_subscription_status(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Subscription is below the plan minimum quantity ({plan.min_quantity})",
             )
+    if payload.status == SubscriptionStatus.CLOSED:
+        if subscription.expiry_date is None or subscription.expiry_date > date.today():
+            subscription.expiry_date = date.today()
+        # Clean up any unconfirmed draft invoices for this subscription
+        from app.models.invoicing import Invoice, InvoiceStatus, InvoiceDiscountUse
+        draft_invoices = session.exec(
+            select(Invoice).where(
+                Invoice.subscription_id == subscription_id,
+                Invoice.status == InvoiceStatus.DRAFT,
+            )
+        ).all()
+        for inv in draft_invoices:
+            uses = session.exec(
+                select(InvoiceDiscountUse).where(InvoiceDiscountUse.invoice_id == inv.id)
+            ).all()
+            for use in uses:
+                rule = session.get(DiscountRule, use.discount_rule_id)
+                if rule and rule.uses > 0:
+                    rule.uses -= 1
+                    session.add(rule)
+            inv.status = InvoiceStatus.CANCELLED
+            session.add(inv)
+
     subscription.status = payload.status
     session.add(subscription)
     session.commit()
