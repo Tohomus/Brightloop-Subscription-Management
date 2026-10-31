@@ -210,3 +210,19 @@ def test_delete_subscription_with_invoices_returns_409(client: TestClient):
     assert "Cannot delete subscription with existing billing history" in del_res.json()["detail"]
 
 
+def test_patch_status_active_enforces_min_quantity(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    # Quotation with quantity 1 (plan requires min_quantity 2)
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "start_date": "2026-10-01", "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 1, "unit_price": 600.0}]},
+    ).json()
+
+    # Direct PATCH to Active must fail with 422
+    patch_res = client.patch(f"/api/subscriptions/{sub['id']}/status", json={"status": "Active"})
+    assert patch_res.status_code == 422
+    assert "below the plan minimum quantity" in patch_res.json()["detail"]
+
+
+

@@ -209,6 +209,13 @@ def update_subscription_status(
             status_code=409,
             detail=f"Cannot transition from {subscription.status.value} to {payload.status.value}",
         )
+    if payload.status == SubscriptionStatus.ACTIVE and subscription.status in {SubscriptionStatus.DRAFT, SubscriptionStatus.QUOTATION}:
+        plan = session.get(Plan, subscription.plan_id)
+        if plan and sum(line.quantity for line in subscription.lines) < plan.min_quantity:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Subscription is below the plan minimum quantity ({plan.min_quantity})",
+            )
     subscription.status = payload.status
     session.add(subscription)
     session.commit()
