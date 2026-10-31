@@ -11,6 +11,25 @@ from .catalog import (
     QuotationTemplate,
     QuotationTemplateRead,
 )
+from .billing import (
+    Subscription,
+    SubscriptionLine,
+    SubscriptionStatus,
+    SubscriptionStatusUpdate,
+    TaxRule,
+    TaxType,
+    DiscountRule,
+    DiscountType,
+    DiscountScope,
+)
+from .invoicing import (
+    Invoice,
+    InvoiceLine,
+    InvoiceDiscountUse,
+    InvoiceStatus,
+    Payment,
+    PaymentMethod,
+)
 
 __all__ = [
     "User",
@@ -26,4 +45,20 @@ __all__ = [
     "BillingFrequency",
     "QuotationTemplate",
     "QuotationTemplateRead",
+    "Subscription",
+    "SubscriptionLine",
+    "SubscriptionStatus",
+    "SubscriptionStatusUpdate",
+    "TaxRule",
+    "TaxType",
+    "DiscountRule",
+    "DiscountType",
+    "DiscountScope",
+    "Invoice",
+    "InvoiceLine",
+    "InvoiceDiscountUse",
+    "InvoiceStatus",
+    "Payment",
+    "PaymentMethod",
 ]
+
