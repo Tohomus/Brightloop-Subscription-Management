@@ -8,7 +8,6 @@ from app.models.auth import UserRole
 class UserRegister(BaseModel):
     email: str
     password: str
-    role: Optional[UserRole] = UserRole.CUSTOMER
 
     @field_validator("email")
     @classmethod

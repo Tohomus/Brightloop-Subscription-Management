@@ -120,6 +120,8 @@ def calculate_lines(
                     tax = taxable * rate / (Decimal("100") + rate)
             else:
                 tax = rate * line.quantity
+                if tax_rule.price_included:
+                    tax = min(tax, taxable)
             tax = money(tax)
             if not tax_rule.price_included:
                 exclusive_tax_total += tax

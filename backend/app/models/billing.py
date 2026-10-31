@@ -76,6 +76,7 @@ class Subscription(SQLModel, table=True):
     start_date: date
     expiry_date: Optional[date] = None
     next_billing_date: date
+    billing_anchor_day: int = Field(ge=1, le=31)
     lines: List["SubscriptionLine"] = Relationship(back_populates="subscription", cascade_delete=True)
 
 

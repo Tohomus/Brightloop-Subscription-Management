@@ -97,6 +97,19 @@ class QuotationTemplate(QuotationTemplateBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     plan: Optional[Plan] = Relationship(back_populates="quotation_templates")
+    lines: List["QuotationTemplateLine"] = Relationship(back_populates="template", cascade_delete=True)
+
+
+class QuotationTemplateLine(SQLModel, table=True):
+    __tablename__ = "quotation_template_lines"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    template_id: int = Field(foreign_key="quotation_templates.id", index=True)
+    product_id: int = Field(foreign_key="products.id")
+    variant_id: Optional[int] = Field(default=None, foreign_key="product_variants.id")
+    quantity: int = Field(default=1, ge=1)
+    unit_price: Optional[float] = Field(default=None, ge=0)
+    template: Optional[QuotationTemplate] = Relationship(back_populates="lines")
 
 
 class QuotationTemplateRead(QuotationTemplateBase):
