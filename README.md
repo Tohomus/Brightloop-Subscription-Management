@@ -51,52 +51,39 @@ Brightloop-Subscription-Management/
 └── .gitignore
 ```
 
-## 🚀 Getting Started
+## 🌿 Git Branching Strategy
 
-### Prerequisites
+To maintain a clean and stable codebase, this project follows a branch-based development workflow.
 
-Install the tools required for the selected technology stack before beginning development.
+### Branches
 
-### Installation
+- **`main`:** The stable branch containing approved and integrated code. Direct pushes to this branch are not allowed.
+- **`dev`:** The shared development branch where team members integrate their completed features and bug fixes.
 
-Clone the repository:
+### Contribution Rules
 
-```bash
-git clone <YOUR_REPOSITORY_URL>
+1. **Do not push directly to `main`.** All development work must go through the development workflow.
+2. **Push changes to `dev`.** Team members should integrate their work into the shared development branch.
+3. **Test before pushing.** Ensure your changes work correctly and do not introduce avoidable errors.
+4. **Use meaningful commit messages.** Clearly describe the changes made in each commit.
+5. **Keep your branch updated.** Pull the latest changes from `dev` before starting or integrating new work.
+6. **Coordinate with the team.** Avoid overwriting or conflicting with other team members' changes.
+7. **Promote stable code to `main` through a Pull Request.** Changes should be reviewed and approved before being merged into `main`.
+
+### Recommended Workflow
+
+For individual features, team members can create their own feature branches from `dev`, push their changes to those branches, and open a Pull Request targeting `dev`.
+
+```text
+main
+  │
+  └── dev
+       ├── feature/authentication
+       ├── feature/subscription-management
+       ├── feature/invoice-management
+       └── feature/revenue-dashboard
 ```
 
-Navigate to the project directory:
+Once the changes are tested and integrated into `dev`, the team can create a Pull Request from `dev` to `main` when the code is ready for a stable release.
 
-```bash
-cd Brightloop-Subscription-Management
-```
-
-Follow the setup instructions that will be added as the application is developed.
-
-## 👥 User Roles
-
-| Role | Responsibilities |
-|---|---|
-| Admin | Manage users, products, plans, taxes, discounts, and system configuration. |
-| Internal Staff | Handle day-to-day customer, subscription, invoice, and payment operations according to assigned permissions. |
-| Customer | Access their own subscriptions and invoices through a dedicated portal. |
-
-## 📈 Expected Outcome
-
-A centralized subscription management system that reduces manual work, improves billing accuracy, simplifies payment reconciliation, and provides clear visibility into recurring revenue.
-
-The platform will aim to keep pages responsive even when managing thousands of subscriptions.
-
-## 🗺️ Development Status
-
-**Status:** Initial setup
-
-This project is currently in its initial development stage. Features, architecture, and implementation details will be documented as development progresses.
-
-## 🤝 Contributing
-
-Contributions from the hackathon team are welcome. Please coordinate with the team before making significant changes to the project structure or implementation.
-
-## 📄 License
-
-A license will be added once the project requirements and distribution plans are finalized.
+### Basic
