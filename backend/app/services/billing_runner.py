@@ -49,6 +49,11 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
                     session.add(subscription)
                 break
 
+            if subscription.expiry_date is not None and cycle_start > subscription.expiry_date:
+                subscription.status = SubscriptionStatus.CLOSED
+                session.add(subscription)
+                break
+
             key = f"{subscription.id}_{cycle_start.isoformat()}"
             existing = session.exec(select(Invoice.id).where(Invoice.idempotency_key == key)).first()
             next_billing_date = _advance(cycle_start, plan.frequency)

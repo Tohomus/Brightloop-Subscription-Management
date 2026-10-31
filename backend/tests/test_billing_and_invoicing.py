@@ -272,3 +272,34 @@ def test_price_included_tax_line_total(client: TestClient):
     assert line["tax_rate"] == 10.0
 
 
+def test_subscription_expiry_date_halts_billing(client: TestClient):
+    from datetime import date
+    from app.models.billing import Subscription
+
+    u = client.post("/api/auth/register", json={"email": "expired@test.com", "password": "Password123!", "role": "customer"}).json()
+    p = client.post("/api/products", json={"name": "Term SaaS", "type": "software", "sales_price": 500.0, "cost_price": 100.0, "variants": []}).json()
+    plan = client.post("/api/plans", json={"name": "Monthly Term", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-01-01"}).json()
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": u["id"], "plan_id": plan["id"], "start_date": "2026-01-01", "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 500.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    # Set expiry_date to 2026-03-15 on test_engine
+    with Session(test_engine) as s:
+        db_sub = s.get(Subscription, sub["id"])
+        db_sub.expiry_date = date(2026, 3, 15)
+        s.add(db_sub)
+        s.commit()
+
+    # Run billing up to 2026-05-01 (past expiry_date 2026-03-15)
+    run_res = client.post("/api/billing/run", json={"simulated_date": "2026-05-01"}).json()
+    # Cycles: 2026-01-01 (gen 1), 2026-02-01 (gen 2), 2026-03-01 (gen 3), 2026-04-01 is > 2026-03-15 (closed, not generated)
+    assert run_res["generated"] == 3
+
+    # Check that subscription is now Closed
+    sub_closed = client.get(f"/api/subscriptions/{sub['id']}").json()
+    assert sub_closed["status"] == "Closed"
+
+
