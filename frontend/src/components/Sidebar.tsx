@@ -4,11 +4,9 @@ import {
   Boxes,
   FileSpreadsheet,
   Receipt,
-  LogIn,
-  CheckCircle2,
-  Database,
   LayoutDashboard,
-  UserCheck,
+  Shield,
+  Zap,
 } from 'lucide-react';
 import type { UserRole } from '../types';
 
@@ -23,66 +21,86 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       label: 'Executive Telemetry',
       badge: 'SLA <2s',
       icon: LayoutDashboard,
+      roles: ['admin'], // Strictly Admin!
+    },
+    {
+      to: '/staff/subscriptions',
+      label: 'Subscriptions & Quotes',
+      badge: role === 'customer' ? 'My Subs' : 'Contracts',
+      icon: FileSpreadsheet,
+      roles: ['admin', 'staff'],
+    },
+    {
+      to: '/staff/invoices',
+      label: 'Invoices & Ledger',
+      badge: 'Ledger',
+      icon: Receipt,
       roles: ['admin', 'staff'],
     },
     {
       to: '/admin/products',
-      label: 'Products & Plans',
+      label: 'Products & Catalog',
       badge: 'Catalog',
       icon: Boxes,
       roles: ['admin', 'staff'],
     },
     {
-      to: '/staff/subscriptions',
-      label: 'Subscriptions',
-      badge: 'Contracts',
-      icon: FileSpreadsheet,
-      roles: ['admin', 'staff', 'customer'],
-    },
-    {
-      to: '/staff/invoices',
-      label: 'Invoices & Billing',
-      badge: 'Ledger',
-      icon: Receipt,
-      roles: ['admin', 'staff', 'customer'],
-    },
-    {
       to: '/portal',
       label: 'Customer Portal',
       badge: 'Self-Serve',
-      icon: UserCheck,
+      icon: Shield,
       roles: ['admin', 'customer'],
-    },
-    {
-      to: '/login',
-      label: 'Switch Persona',
-      badge: 'Auth',
-      icon: LogIn,
-      roles: ['admin', 'staff', 'customer'],
     },
   ];
 
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
 
+  const roleMeta: Record<UserRole, { title: string; color: string; badgeBg: string }> = {
+    admin: {
+      title: 'Administrator',
+      color: 'bg-blue-500',
+      badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+    },
+    staff: {
+      title: 'Operations Staff',
+      color: 'bg-emerald-500',
+      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    },
+    customer: {
+      title: 'Customer Tenant',
+      color: 'bg-violet-500',
+      badgeBg: 'bg-violet-50 text-violet-700 border-violet-200',
+    },
+  };
+
+  const meta = roleMeta[role];
+
   return (
-    <aside className="w-64 flex-shrink-0 flex flex-col justify-between py-6 pr-6">
+    <aside className="w-64 flex-shrink-0 flex flex-col justify-between py-2 pr-6 select-none">
       <div className="space-y-4">
-        {/* Workspace Scope Pill */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
-            <span>Operations Rail</span>
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        {/* Workspace Scope Box */}
+        <div className="rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] p-3.5 shadow-xs">
+          <div className="flex items-center justify-between text-xs font-semibold text-[#09090B]">
+            <span className="text-[11px] uppercase tracking-wider text-[#71717A] font-mono">
+              Active Scope
+            </span>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Active Persona:</span>
-            <span className="rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 font-bold uppercase text-[10px]">
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full ${meta.color}`} />
+              <span className="text-xs font-bold text-[#09090B] font-sans">{meta.title}</span>
+            </div>
+            <span
+              className={`rounded-full px-2 py-0.5 font-bold uppercase text-[9px] font-mono border ${meta.badgeBg}`}
+            >
               {role}
             </span>
           </div>
         </div>
 
-        {/* Navigation Items (Clean Upflow pill style) */}
-        <nav className="space-y-1.5">
+        {/* Navigation Items */}
+        <nav className="space-y-1">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -90,19 +108,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `group flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition ${
+                  `group flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-[#0B0F19] text-white shadow-md'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-[#09090B] text-white font-semibold'
+                      : 'text-[#71717A] hover:bg-[#F3F3F4] hover:text-[#09090B]'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <Icon
-                        className={`h-4 w-4 transition ${
-                          isActive ? 'text-[#3B49DF]' : 'text-slate-400 group-hover:text-slate-600'
+                        className={`h-4 w-4 transition-colors ${
+                          isActive ? 'text-white' : 'text-[#71717A] group-hover:text-[#09090B]'
                         }`}
                       />
                       <span>{item.label}</span>
@@ -110,8 +128,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
                     <span
                       className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
                         isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
+                          ? 'bg-white/15 text-white'
+                          : 'bg-[#F3F3F4] text-[#71717A] group-hover:bg-[#E4E4E7]'
                       }`}
                     >
                       {item.badge}
@@ -125,17 +143,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       </div>
 
       {/* Engine Status Card */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
-          <Database className="h-4 w-4 text-[#3B49DF]" />
+      <div className="rounded-lg border border-[#E4E4E7] bg-[#FFFFFF] p-3.5 space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#09090B]">
+          <Zap className="h-3.5 w-3.5 text-[#2563EB]" />
           <span>Billing Engine</span>
         </div>
-        <p className="text-[11px] text-slate-500 leading-relaxed">
+        <p className="text-[11px] text-[#71717A] leading-relaxed">
           Zero-daemon SQLite transaction ledger. Strict cycle key idempotency.
         </p>
-        <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 font-medium">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          <span>Accounting Invariants OK</span>
+        <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 font-semibold pt-1 border-t border-[#E4E4E7]">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <span>Invariants Operational</span>
         </div>
       </div>
     </aside>

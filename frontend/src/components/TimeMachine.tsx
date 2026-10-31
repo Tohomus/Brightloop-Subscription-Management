@@ -61,31 +61,31 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
 
   if (compact) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-full bg-[#0B0F19] text-white px-3.5 py-1.5 border border-white/10 shadow-lg text-xs">
-        <span className="flex items-center gap-1.5 text-slate-300 font-mono text-[11px]">
-          <Calendar className="h-3.5 w-3.5 text-blue-400" />
-          <span>Simulated:</span>
-          <strong className="text-white font-semibold">{currentDate}</strong>
+      <div className="inline-flex items-center gap-2 rounded-lg bg-[#0A0A0B] text-white px-3 py-1 border border-[#27272A] font-mono text-xs">
+        <span className="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+          <Calendar className="h-3.5 w-3.5 text-zinc-300" />
+          <span>SIMULATED:</span>
+          <strong className="text-zinc-100 font-semibold tabular-nums">{currentDate}</strong>
         </span>
-        <div className="h-3 w-[1px] bg-white/20 mx-0.5" />
+        <div className="h-3 w-[1px] bg-[#27272A] mx-0.5" />
         <button
           onClick={() => handleAdvance(1)}
           disabled={isProcessing}
-          className="rounded-full bg-white/10 hover:bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white transition-colors active:scale-[0.96] disabled:opacity-50 cursor-pointer"
+          className="rounded px-2 py-0.5 text-[11px] font-medium text-zinc-300 hover:text-white hover:bg-[#1E1E22] transition-colors disabled:opacity-50 cursor-pointer"
         >
           +1d
         </button>
         <button
           onClick={() => handleAdvance(7)}
           disabled={isProcessing}
-          className="rounded-full bg-white/10 hover:bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white transition-colors active:scale-[0.96] disabled:opacity-50 cursor-pointer"
+          className="rounded px-2 py-0.5 text-[11px] font-medium text-zinc-300 hover:text-white hover:bg-[#1E1E22] transition-colors disabled:opacity-50 cursor-pointer"
         >
           +7d
         </button>
         <button
           onClick={() => handleAdvance(30)}
           disabled={isProcessing}
-          className="rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-3 py-0.5 text-[11px] font-semibold text-white transition-colors active:scale-[0.96] disabled:opacity-50 shadow-sm cursor-pointer"
+          className="rounded bg-[#2563EB] hover:bg-[#1D4ED8] px-2.5 py-0.5 text-[11px] font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
         >
           +30d
         </button>
@@ -94,26 +94,26 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
   }
 
   return (
-    <div className="w-full rounded-2xl bg-[#0B0F19] text-white p-4 sm:p-5 border border-white/10 shadow-xl transition-all">
+    <div className="w-full rounded-xl bg-[#0A0A0B] text-white p-4 border border-[#27272A] shadow-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Engine Status & Current Date Indicator */}
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B49DF] to-[#242DB8] text-white shadow-inner">
-            <Clock className="h-5 w-5 text-blue-200" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#141416] border border-[#27272A] text-zinc-300">
+            <Clock className="h-4 w-4 text-zinc-300" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-blue-300">
+              <span className="text-[11px] font-mono font-medium tracking-wider text-zinc-400 uppercase">
                 Chrono-Simulator
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Idempotent Engine
+                IDEMPOTENT RUNNER
               </span>
             </div>
             <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-slate-400 text-xs">Simulated System Clock:</span>
-              <span className="font-mono text-lg font-bold text-white tracking-tight">
+              <span className="text-zinc-500 text-xs">Simulated System Clock:</span>
+              <span className="font-mono text-base font-semibold text-zinc-100 tracking-tight tabular-nums">
                 {currentDate}
               </span>
             </div>
@@ -121,12 +121,12 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
         </div>
 
         {/* Center/Right: Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={handleRunToday}
             disabled={isProcessing}
             title="Execute billing runner for the current date without advancing"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/15 px-3 py-2 text-xs font-medium text-slate-200 border border-white/10 transition-colors active:scale-[0.96] disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#141416] hover:bg-[#1E1E22] px-3 py-1.5 text-xs font-mono font-medium text-zinc-300 border border-[#27272A] transition-colors disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isProcessing ? 'animate-spin' : ''}`} />
             <span>Run Today</span>
@@ -135,7 +135,7 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
           <button
             onClick={() => handleAdvance(1)}
             disabled={isProcessing}
-            className="inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3.5 py-2 text-xs font-semibold text-white border border-white/10 transition-colors active:scale-[0.96] disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center rounded-lg bg-[#141416] hover:bg-[#1E1E22] px-3 py-1.5 text-xs font-mono font-medium text-zinc-200 border border-[#27272A] transition-colors disabled:opacity-50 cursor-pointer"
           >
             <span>+1 Day</span>
           </button>
@@ -143,7 +143,7 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
           <button
             onClick={() => handleAdvance(7)}
             disabled={isProcessing}
-            className="inline-flex items-center gap-1 rounded-xl bg-white/10 hover:bg-white/15 px-3.5 py-2 text-xs font-semibold text-white border border-white/10 transition-colors active:scale-[0.96] disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center rounded-lg bg-[#141416] hover:bg-[#1E1E22] px-3 py-1.5 text-xs font-mono font-medium text-zinc-200 border border-[#27272A] transition-colors disabled:opacity-50 cursor-pointer"
           >
             <span>+7 Days</span>
           </button>
@@ -151,9 +151,9 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
           <button
             onClick={() => handleAdvance(30)}
             disabled={isProcessing}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#3B49DF] hover:bg-[#313DE0] px-4 py-2 text-xs font-bold text-white shadow-md transition-colors active:scale-[0.96] disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] px-3.5 py-1.5 text-xs font-mono font-medium text-white transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <FastForward className="h-3.5 w-3.5 text-blue-200" />
+            <FastForward className="h-3.5 w-3.5" />
             <span>+30 Days (Cycle)</span>
           </button>
         </div>
@@ -161,18 +161,19 @@ export const TimeMachine: React.FC<TimeMachineProps> = ({ onSimulate, compact = 
 
       {/* Real-time Feedback & Audit Strip */}
       {feedback && (
-        <div className="mt-3.5 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between text-xs text-slate-300 animate-fade-in gap-2">
+        <div className="mt-3 pt-3 border-t border-[#27272A] flex flex-wrap items-center justify-between text-xs text-zinc-400 font-mono gap-2">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-emerald-400" />
-            <span className="font-medium text-white">{feedback.message}</span>
+            <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="font-medium text-zinc-200">{feedback.message}</span>
           </div>
-          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
-            <span>Evaluated: <strong className="text-slate-200">{feedback.evaluated ?? 0}</strong></span>
-            <span>Generated: <strong className="text-emerald-400">{feedback.generated ?? 0}</strong></span>
-            <span>Skipped (Idempotent): <strong className="text-blue-300">{feedback.skipped ?? 0}</strong></span>
+          <div className="flex items-center gap-3 text-[11px] text-zinc-400">
+            <span>Evaluated: <strong className="text-zinc-200 tabular-nums">{feedback.evaluated ?? 0}</strong></span>
+            <span>Generated: <strong className="text-emerald-400 tabular-nums">{feedback.generated ?? 0}</strong></span>
+            <span>Skipped: <strong className="text-zinc-400 tabular-nums">{feedback.skipped ?? 0}</strong></span>
           </div>
         </div>
       )}
     </div>
   );
 };
+
