@@ -31,7 +31,7 @@ export const CatalogPage: React.FC = () => {
     sales_price: 1000,
     cost_price: 300,
     notes: '',
-    variants: [{ attribute_name: 'Edition', attribute_value: 'Odoo ERP Sync', price_extra: 560 }] as ProductVariant[],
+    variants: [{ attribute_name: 'Edition', attribute_value: 'Enterprise Sync', price_extra: 560 }] as ProductVariant[],
   });
 
   // Plan Modal State (Supports Create & Edit)
@@ -81,7 +81,7 @@ export const CatalogPage: React.FC = () => {
       sales_price: 1000,
       cost_price: 300,
       notes: '',
-      variants: [{ attribute_name: 'Edition', attribute_value: 'Odoo ERP Sync', price_extra: 560 }],
+      variants: [{ attribute_name: 'Edition', attribute_value: 'Enterprise Sync', price_extra: 560 }],
     });
     setShowProductModal(true);
   };
@@ -206,53 +206,53 @@ export const CatalogPage: React.FC = () => {
   const getTypeBadgeClass = (type: ProductType) => {
     switch (type) {
       case 'software':
-        return 'bg-blue-50 text-[#3B49DF] border-blue-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'service':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'addon':
-        return 'bg-violet-50 text-violet-700 border-violet-200';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-zinc-100 text-zinc-700 border-zinc-200';
     }
   };
 
   return (
     <div className="space-y-6">
       {/* 1. HEADER & ACTIONS */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-[#E4E4E7]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-[#0B0F19]">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900 font-sans">
               Products & Plans Catalog
             </h1>
-            <span className="rounded-full bg-blue-50 text-[#3B49DF] px-2.5 py-0.5 text-xs font-semibold">
-              Odoo Architecture
+            <span className="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-mono font-medium text-blue-700 bg-blue-50 border border-blue-200">
+              CATALOG ENGINE v2.4
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 mt-1">
             Configure dynamic variant price modifiers, cost tracking, and recurring plan frequencies.
           </p>
         </div>
 
         {/* Tab & New Item Buttons */}
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-full bg-slate-100 p-1 border border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <div className="flex rounded-lg bg-zinc-100 p-1 border border-[#E4E4E7]">
             <button
               onClick={() => setActiveTab('products')}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              className={`rounded-md px-3 py-1 text-xs font-mono font-medium transition-colors cursor-pointer ${
                 activeTab === 'products'
-                  ? 'bg-[#0B0F19] text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-zinc-900 text-white shadow-sm'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Products ({products.length})
             </button>
             <button
               onClick={() => setActiveTab('plans')}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              className={`rounded-md px-3 py-1 text-xs font-mono font-medium transition-colors cursor-pointer ${
                 activeTab === 'plans'
-                  ? 'bg-[#0B0F19] text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-zinc-900 text-white shadow-sm'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Plans ({plans.length})
@@ -261,7 +261,7 @@ export const CatalogPage: React.FC = () => {
 
           <button
             onClick={() => (activeTab === 'products' ? handleOpenProductCreate() : handleOpenPlanCreate())}
-            className="flex items-center gap-1.5 rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-4 py-2 text-xs font-semibold text-white shadow-sm transition active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition-colors cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>{activeTab === 'products' ? 'New Product' : 'New Plan'}</span>
@@ -271,44 +271,52 @@ export const CatalogPage: React.FC = () => {
 
       {/* 2. CATALOG KPI SUMMARY CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Catalog SKUs</span>
-            <Layers className="h-4 w-4 text-[#3B49DF]" />
+        <div className="rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-500">Catalog SKUs</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-50 border border-[#E4E4E7] text-zinc-700">
+              <Layers className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-1 text-2xl font-bold text-[#0B0F19] font-mono">{totalItems}</div>
-          <span className="text-[10px] text-slate-400 font-mono">{softwareItems} Software • {totalItems - softwareItems} Addons</span>
+          <div className="mt-2 text-2xl font-bold text-zinc-900 font-mono tabular-nums">{totalItems}</div>
+          <span className="text-[11px] text-zinc-400 font-mono">{softwareItems} Software • {totalItems - softwareItems} Addons</span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Billing Plans</span>
-            <Tag className="h-4 w-4 text-emerald-600" />
+        <div className="rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-500">Billing Plans</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <Tag className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-1 text-2xl font-bold text-emerald-600 font-mono">{plans.length}</div>
-          <span className="text-[10px] text-emerald-600 font-medium">Daily to Yearly cadences</span>
+          <div className="mt-2 text-2xl font-bold text-zinc-900 font-mono tabular-nums">{plans.length}</div>
+          <span className="text-[11px] text-emerald-600 font-medium">Daily to Yearly cadences</span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Avg Base Price</span>
-            <DollarSign className="h-4 w-4 text-[#3B49DF]" />
+        <div className="rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-500">Avg Base Price</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-50 border border-[#E4E4E7] text-zinc-700">
+              <DollarSign className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-1 text-2xl font-bold text-[#3B49DF] font-mono">
+          <div className="mt-2 text-2xl font-bold text-zinc-900 font-mono tabular-nums">
             ${Math.round(avgBasePrice).toLocaleString()}/mo
           </div>
-          <span className="text-[10px] text-slate-400">Before variant modifiers</span>
+          <span className="text-[11px] text-zinc-400 font-mono">Before variant modifiers</span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Top Margin Product</span>
-            <TrendingUp className="h-4 w-4 text-violet-600" />
+        <div className="rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-500">Top Margin SKU</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-purple-50 border border-purple-200 text-purple-700">
+              <TrendingUp className="h-3.5 w-3.5" />
+            </div>
           </div>
-          <div className="mt-1 text-sm font-bold text-[#0B0F19] truncate">
+          <div className="mt-2 text-sm font-semibold text-zinc-900 truncate">
             {highestMarginProduct ? highestMarginProduct.name : 'N/A'}
           </div>
-          <span className="text-[10px] text-violet-600 font-mono font-semibold">
+          <span className="text-[11px] text-purple-700 font-mono font-medium">
             {highestMarginProduct
               ? `+$${(highestMarginProduct.sales_price - highestMarginProduct.cost_price).toLocaleString()} spread`
               : ''}
@@ -320,15 +328,15 @@ export const CatalogPage: React.FC = () => {
       {activeTab === 'products' && (
         <div className="space-y-4">
           {/* Search & Type Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#E4E4E7] shadow-sm">
             <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products or descriptions..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-1.5 text-xs text-slate-900 outline-none focus:border-[#3B49DF] focus:bg-white"
+                className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 pl-8 pr-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white font-mono"
               />
             </div>
 
@@ -337,10 +345,10 @@ export const CatalogPage: React.FC = () => {
                 <button
                   key={t}
                   onClick={() => setSelectedType(t)}
-                  className={`rounded-full px-3.5 py-1 text-xs font-semibold capitalize transition cursor-pointer ${
+                  className={`rounded-lg px-3 py-1 text-xs font-mono font-medium capitalize transition-colors cursor-pointer ${
                     selectedType === t
-                      ? 'bg-[#0B0F19] text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-zinc-900 text-white'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                   }`}
                 >
                   {t}
@@ -350,9 +358,9 @@ export const CatalogPage: React.FC = () => {
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredProducts.length === 0 ? (
-              <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400 text-xs">
+              <div className="col-span-full rounded-xl border border-[#E4E4E7] bg-white p-10 text-center text-zinc-400 font-mono text-xs">
                 No products found matching your search.
               </div>
             ) : (
@@ -362,56 +370,56 @@ export const CatalogPage: React.FC = () => {
                 return (
                   <div
                     key={p.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                    className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-sm hover:border-zinc-300 transition-colors flex flex-col justify-between"
                   >
                     <div>
                       {/* Top Type & Price */}
                       <div className="flex items-center justify-between">
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase border ${getTypeBadgeClass(
+                          className={`rounded px-2 py-0.5 text-[10px] font-mono font-medium uppercase border ${getTypeBadgeClass(
                             p.type
                           )}`}
                         >
                           {p.type}
                         </span>
                         <div className="text-right">
-                          <span className="text-sm font-bold text-[#0B0F19] font-mono">
+                          <span className="text-base font-bold text-zinc-900 font-mono tabular-nums">
                             ${p.sales_price.toLocaleString()}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono block">base / mo</span>
+                          <span className="text-[10px] text-zinc-400 font-mono block">base / mo</span>
                         </div>
                       </div>
 
-                      <h3 className="text-base font-bold text-[#0B0F19] mt-3 leading-snug">{p.name}</h3>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                      <h3 className="text-sm font-semibold text-zinc-900 mt-2.5 leading-snug">{p.name}</h3>
+                      <p className="text-xs text-zinc-500 mt-1 line-clamp-2 leading-relaxed">
                         {p.notes || 'No description notes provided.'}
                       </p>
 
                       {/* Formula Invariant Box */}
-                      <div className="mt-4 rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] text-slate-600 font-mono">
-                        <span className="text-[10px] text-slate-400 block uppercase font-sans font-semibold mb-0.5">
+                      <div className="mt-3.5 rounded-lg bg-[#FAFAFA] border border-[#E4E4E7] p-2.5 text-[11px] text-zinc-600 font-mono">
+                        <span className="text-[10px] text-zinc-400 block uppercase font-sans font-medium mb-0.5">
                           Pricing Formula Invariant
                         </span>
                         Unit Price = ${p.sales_price} + &Sigma;(&Delta;P)
                       </div>
 
                       {/* Configured Variants */}
-                      <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      <div className="mt-3 pt-3 border-t border-[#E4E4E7] space-y-1.5">
+                        <span className="text-[10px] font-mono font-medium uppercase tracking-wider text-zinc-400">
                           Attribute Variants ({p.variants.length})
                         </span>
                         {p.variants.length === 0 ? (
-                          <div className="text-[11px] text-slate-400 italic">No variants configured</div>
+                          <div className="text-[11px] text-zinc-400 font-mono italic">No variants configured</div>
                         ) : (
                           p.variants.map((v, i) => (
                             <div
                               key={i}
-                              className="flex items-center justify-between rounded-lg bg-blue-50/50 border border-blue-100/60 px-2.5 py-1 text-xs"
+                              className="flex items-center justify-between rounded-md bg-zinc-50 border border-[#E4E4E7] px-2.5 py-1 text-xs"
                             >
-                              <span className="text-slate-700 font-medium">
-                                {v.attribute_name}: <strong className="text-[#0B0F19]">{v.attribute_value}</strong>
+                              <span className="text-zinc-700 font-medium text-[11px]">
+                                {v.attribute_name}: <strong className="text-zinc-900">{v.attribute_value}</strong>
                               </span>
-                              <span className="font-mono text-[11px] font-bold text-[#3B49DF]">
+                              <span className="font-mono text-[11px] font-semibold text-blue-600 tabular-nums">
                                 +${v.price_extra}
                               </span>
                             </div>
@@ -421,24 +429,24 @@ export const CatalogPage: React.FC = () => {
                     </div>
 
                     {/* Cost & Margins and Actions */}
-                    <div className="mt-5 pt-3 border-t border-slate-100">
-                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 mb-3">
+                    <div className="mt-4 pt-3 border-t border-[#E4E4E7]">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 mb-2.5">
                         <span>Cost: ${p.cost_price}</span>
-                        <span className="text-emerald-600 font-semibold">
+                        <span className="text-emerald-600 font-medium tabular-nums">
                           Margin: ${dollarMargin.toLocaleString()} ({marginPercent}%)
                         </span>
                       </div>
-                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-50">
+                      <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-[#E4E4E7]">
                         <button
                           onClick={() => handleOpenProductEdit(p)}
-                          className="flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                          className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 transition-colors cursor-pointer"
                         >
                           <Edit3 className="h-3 w-3" />
                           <span>Edit</span>
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id)}
-                          className="flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                         >
                           <Trash2 className="h-3 w-3" />
                           <span>Delete</span>
@@ -455,60 +463,60 @@ export const CatalogPage: React.FC = () => {
 
       {/* 4. PLANS TAB VIEW */}
       {activeTab === 'plans' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {plans.map((pl) => (
             <div
               key={pl.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+              className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-sm hover:border-zinc-300 transition-colors flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-indigo-50 text-[#3B49DF] font-mono text-[10px] font-bold px-2.5 py-0.5 uppercase border border-indigo-200">
+                  <span className="rounded bg-blue-50 text-blue-700 font-mono text-[10px] font-medium px-2 py-0.5 uppercase border border-blue-200">
                     {pl.frequency}
                   </span>
-                  <span className="text-xs font-mono text-slate-500 font-semibold">Min Qty: {pl.min_quantity}</span>
+                  <span className="text-xs font-mono text-zinc-500">Min Qty: {pl.min_quantity}</span>
                 </div>
-                <h3 className="text-base font-bold text-[#0B0F19] mt-3">{pl.name}</h3>
+                <h3 className="text-base font-semibold text-zinc-900 mt-2.5">{pl.name}</h3>
 
                 {/* Plan Rules Matrix */}
-                <div className="mt-4 space-y-2 text-xs bg-slate-50 rounded-xl p-3 border border-slate-100">
+                <div className="mt-3.5 space-y-2 text-xs bg-[#FAFAFA] rounded-lg p-3 border border-[#E4E4E7] font-mono">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Allows Pause:</span>
-                    <strong className={pl.allow_pause ? 'text-emerald-600' : 'text-slate-400'}>
+                    <span className="text-zinc-600 font-sans">Allows Pause:</span>
+                    <strong className={pl.allow_pause ? 'text-emerald-600' : 'text-zinc-400'}>
                       {pl.allow_pause ? 'Enabled' : 'Disabled'}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Auto-close on End:</span>
-                    <strong className={pl.auto_close_on_end ? 'text-amber-600' : 'text-slate-400'}>
+                    <span className="text-zinc-600 font-sans">Auto-close on End:</span>
+                    <strong className={pl.auto_close_on_end ? 'text-amber-600' : 'text-zinc-400'}>
                       {pl.auto_close_on_end ? 'Yes (Auto-term)' : 'No (Continuous)'}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Early Termination:</span>
-                    <strong className={pl.allow_early_close ? 'text-blue-600' : 'text-slate-400'}>
+                    <span className="text-zinc-600 font-sans">Early Termination:</span>
+                    <strong className={pl.allow_early_close ? 'text-blue-600' : 'text-zinc-400'}>
                       {pl.allow_early_close ? 'Permitted' : 'Locked'}
                     </strong>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-2">
+              <div className="mt-4 pt-3 border-t border-[#E4E4E7]">
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono mb-2">
                   <span>Start: {pl.start_date}</span>
                   <span>{pl.end_date ? `End: ${pl.end_date}` : 'Open-ended'}</span>
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-50">
+                <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-[#E4E4E7]">
                   <button
                     onClick={() => handleOpenPlanEdit(pl)}
-                    className="flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                    className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 transition-colors cursor-pointer"
                   >
                     <Edit3 className="h-3 w-3" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDeletePlan(pl.id)}
-                    className="flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <Trash2 className="h-3 w-3" />
                     <span>Delete</span>
@@ -522,40 +530,40 @@ export const CatalogPage: React.FC = () => {
 
       {/* MODAL: CREATE / EDIT PRODUCT */}
       {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="rounded-3xl bg-white p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-100 animate-fade-in my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-lg font-bold text-[#0B0F19]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="rounded-xl bg-white p-6 max-w-xl w-full shadow-xl border border-[#E4E4E7] my-8">
+            <div className="flex items-center justify-between border-b border-[#E4E4E7] pb-3.5">
+              <h2 className="text-base font-bold text-zinc-900">
                 {editingProductId ? 'Edit Product Offering' : 'Create New Product Offering'}
               </h2>
               <button
                 onClick={() => setShowProductModal(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="mt-4 space-y-4 text-xs">
+            <form onSubmit={handleSaveProduct} className="mt-4 space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Product Name</label>
+                <label className="block font-medium text-zinc-700 mb-1">Product Name</label>
                 <input
                   required
                   type="text"
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                   placeholder="e.g. Brightloop Enterprise Cloud Suite"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 outline-none focus:border-[#3B49DF] focus:bg-white"
+                  className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Type</label>
+                  <label className="block font-medium text-zinc-700 mb-1">Type</label>
                   <select
                     value={productForm.type}
                     onChange={(e) => setProductForm({ ...productForm, type: e.target.value as ProductType })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400"
                   >
                     <option value="software">Software (Core)</option>
                     <option value="service">Service (Support/SLA)</option>
@@ -563,56 +571,56 @@ export const CatalogPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Base Sales Price ($)</label>
+                  <label className="block font-medium text-zinc-700 mb-1">Base Sales Price ($)</label>
                   <input
                     required
                     type="number"
                     value={productForm.sales_price}
                     onChange={(e) => setProductForm({ ...productForm, sales_price: Number(e.target.value) })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF] font-mono"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Cost Price ($)</label>
+                  <label className="block font-medium text-zinc-700 mb-1">Cost Price ($)</label>
                   <input
                     required
                     type="number"
                     value={productForm.cost_price}
                     onChange={(e) => setProductForm({ ...productForm, cost_price: Number(e.target.value) })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF] font-mono"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Description / Offering Notes</label>
+                <label className="block font-medium text-zinc-700 mb-1">Description / Offering Notes</label>
                 <textarea
                   value={productForm.notes}
                   onChange={(e) => setProductForm({ ...productForm, notes: e.target.value })}
                   placeholder="Describe offering details, deliverable limits, and terms..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                  className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400"
                   rows={2}
                 />
               </div>
 
               {/* Dynamic Variants Section */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+              <div className="rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] p-3.5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-slate-800 text-xs">Odoo Variant Pricing Modifiers</span>
-                    <p className="text-[10px] text-slate-400">Unit Price = Base Price + Variant Extra</p>
+                    <span className="font-semibold text-zinc-800 text-xs">Variant Pricing Modifiers</span>
+                    <p className="text-[10px] text-zinc-400 font-mono">Unit Price = Base Price + Variant Extra</p>
                   </div>
                   <button
                     type="button"
                     onClick={addVariantRow}
-                    className="rounded-full bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-semibold text-[#3B49DF] transition cursor-pointer"
+                    className="rounded-md bg-white hover:bg-zinc-100 border border-[#E4E4E7] px-2.5 py-1 text-[11px] font-medium text-zinc-700 transition-colors cursor-pointer"
                   >
                     + Add Variant
                   </button>
                 </div>
 
                 {productForm.variants.length === 0 ? (
-                  <div className="text-[11px] text-slate-400 italic text-center py-2">
+                  <div className="text-[11px] text-zinc-400 font-mono italic text-center py-2">
                     No variants added. This product will use its base price exclusively.
                   </div>
                 ) : (
@@ -624,14 +632,14 @@ export const CatalogPage: React.FC = () => {
                           value={v.attribute_name}
                           onChange={(e) => updateVariantRow(i, 'attribute_name', e.target.value)}
                           placeholder="Attribute (e.g. Edition)"
-                          className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900"
+                          className="flex-1 rounded border border-[#E4E4E7] bg-white px-2 py-1 text-xs text-zinc-900"
                         />
                         <input
                           type="text"
                           value={v.attribute_value}
                           onChange={(e) => updateVariantRow(i, 'attribute_value', e.target.value)}
-                          placeholder="Value (e.g. Odoo Sync)"
-                          className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900"
+                          placeholder="Value (e.g. Enterprise Sync)"
+                          className="flex-1 rounded border border-[#E4E4E7] bg-white px-2 py-1 text-xs text-zinc-900"
                         />
                         <div className="w-24 relative">
                           <input
@@ -639,15 +647,15 @@ export const CatalogPage: React.FC = () => {
                             value={v.price_extra}
                             onChange={(e) => updateVariantRow(i, 'price_extra', Number(e.target.value))}
                             placeholder="+$"
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-mono text-slate-900"
+                            className="w-full rounded border border-[#E4E4E7] bg-white px-2 py-1 text-xs font-mono text-zinc-900"
                           />
                         </div>
                         <button
                           type="button"
                           onClick={() => removeVariantRow(i)}
-                          className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
+                          className="text-zinc-400 hover:text-rose-600 p-1 cursor-pointer"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
@@ -655,17 +663,17 @@ export const CatalogPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E4E4E7]">
                 <button
                   type="button"
                   onClick={() => setShowProductModal(false)}
-                  className="rounded-full px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="rounded-lg px-3.5 py-1.5 font-medium text-zinc-600 hover:bg-zinc-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-5 py-2 font-semibold text-white shadow-sm cursor-pointer"
+                  className="rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] px-4 py-1.5 font-medium text-white shadow-sm transition-colors cursor-pointer"
                 >
                   {editingProductId ? 'Update Product' : 'Save Product'}
                 </button>
@@ -677,40 +685,40 @@ export const CatalogPage: React.FC = () => {
 
       {/* MODAL: CREATE / EDIT PLAN */}
       {showPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="rounded-3xl bg-white p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-fade-in my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-lg font-bold text-[#0B0F19]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="rounded-xl bg-white p-6 max-w-md w-full shadow-xl border border-[#E4E4E7] my-8">
+            <div className="flex items-center justify-between border-b border-[#E4E4E7] pb-3.5">
+              <h2 className="text-base font-bold text-zinc-900">
                 {editingPlanId ? 'Edit Billing Plan' : 'Create Billing Plan'}
               </h2>
               <button
                 onClick={() => setShowPlanModal(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSavePlan} className="mt-4 space-y-4 text-xs">
+            <form onSubmit={handleSavePlan} className="mt-4 space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Plan Name</label>
+                <label className="block font-medium text-zinc-700 mb-1">Plan Name</label>
                 <input
                   required
                   type="text"
                   value={planForm.name}
                   onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
                   placeholder="e.g. Annual Enterprise Plan"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 outline-none focus:border-[#3B49DF] focus:bg-white"
+                  className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Billing Frequency</label>
+                  <label className="block font-medium text-zinc-700 mb-1">Billing Frequency</label>
                   <select
                     value={planForm.frequency}
                     onChange={(e) => setPlanForm({ ...planForm, frequency: e.target.value as BillingFrequency })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
@@ -719,49 +727,49 @@ export const CatalogPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Min Quantity</label>
+                  <label className="block font-medium text-zinc-700 mb-1">Min Quantity</label>
                   <input
                     required
                     type="number"
                     min={1}
                     value={planForm.min_quantity}
                     onChange={(e) => setPlanForm({ ...planForm, min_quantity: Number(e.target.value) })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF] font-mono"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Start Date</label>
+                  <label className="block font-medium text-zinc-700 mb-1">Start Date</label>
                   <input
                     required
                     type="date"
                     value={planForm.start_date}
                     onChange={(e) => setPlanForm({ ...planForm, start_date: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">End Date (Optional)</label>
+                  <label className="block font-medium text-zinc-700 mb-1">End Date (Optional)</label>
                   <input
                     type="date"
                     value={planForm.end_date}
                     onChange={(e) => setPlanForm({ ...planForm, end_date: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                    className="w-full rounded-lg border border-[#E4E4E7] bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-900 outline-none focus:border-zinc-400 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="space-y-2 pt-2 border-t border-[#E4E4E7]">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={planForm.allow_pause}
                     onChange={(e) => setPlanForm({ ...planForm, allow_pause: e.target.checked })}
-                    className="rounded text-[#3B49DF]"
+                    className="rounded text-blue-600"
                   />
-                  <span className="font-medium text-slate-700">Allow Pause / Resume</span>
+                  <span className="font-medium text-zinc-700">Allow Pause / Resume</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -769,9 +777,9 @@ export const CatalogPage: React.FC = () => {
                     type="checkbox"
                     checked={planForm.auto_close_on_end}
                     onChange={(e) => setPlanForm({ ...planForm, auto_close_on_end: e.target.checked })}
-                    className="rounded text-[#3B49DF]"
+                    className="rounded text-blue-600"
                   />
-                  <span className="font-medium text-slate-700">Auto-close on End Date</span>
+                  <span className="font-medium text-zinc-700">Auto-close on End Date</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -779,23 +787,23 @@ export const CatalogPage: React.FC = () => {
                     type="checkbox"
                     checked={planForm.allow_early_close}
                     onChange={(e) => setPlanForm({ ...planForm, allow_early_close: e.target.checked })}
-                    className="rounded text-[#3B49DF]"
+                    className="rounded text-blue-600"
                   />
-                  <span className="font-medium text-slate-700">Allow Early Termination</span>
+                  <span className="font-medium text-zinc-700">Allow Early Termination</span>
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E4E4E7]">
                 <button
                   type="button"
                   onClick={() => setShowPlanModal(false)}
-                  className="rounded-full px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="rounded-lg px-3.5 py-1.5 font-medium text-zinc-600 hover:bg-zinc-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-5 py-2 font-semibold text-white shadow-sm cursor-pointer"
+                  className="rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] px-4 py-1.5 font-medium text-white shadow-sm transition-colors cursor-pointer"
                 >
                   {editingPlanId ? 'Update Plan' : 'Save Plan'}
                 </button>
@@ -807,3 +815,4 @@ export const CatalogPage: React.FC = () => {
     </div>
   );
 };
+

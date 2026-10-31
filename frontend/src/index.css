@@ -3,13 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --upflow-cobalt: #2a34c6;
-    --upflow-cobalt-dark: #1e269c;
-    --upflow-midnight: #0b0f19;
-    --upflow-surface: #fafbfd;
-  }
-
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
@@ -20,8 +13,54 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
-    background-color: #fafbfd;
-    color: #0b0f19;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #FFFFFF;
+    color: #111827;
+    font-family: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.03em;
+  }
+
+  /* Monospace figures always use tabular alignment */
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.floating-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.floating-card:hover {
+  transform: translateY(-3px);
+}
+
+.custom-scroll::-webkit-scrollbar {
+  display: none;
+}
+.custom-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Subtle, sleek scrollbar matching Mobbin */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E4E4E7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
 }
