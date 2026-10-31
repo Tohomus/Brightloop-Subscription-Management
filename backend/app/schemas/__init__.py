@@ -6,6 +6,17 @@ from .auth import (
     TokenResponse,
     UserResponse,
 )
+from .catalog import (
+    ProductCreate,
+    ProductUpdate,
+    ProductResponse,
+    ProductVariantCreate,
+    ProductVariantResponse,
+    PlanCreate,
+    PlanResponse,
+    QuotationTemplateCreate,
+    QuotationTemplateResponse,
+)
 
 __all__ = [
     "UserRegister",
@@ -14,4 +25,13 @@ __all__ = [
     "PasswordResetConfirm",
     "TokenResponse",
     "UserResponse",
+    "ProductCreate",
+    "ProductUpdate",
+    "ProductResponse",
+    "ProductVariantCreate",
+    "ProductVariantResponse",
+    "PlanCreate",
+    "PlanResponse",
+    "QuotationTemplateCreate",
+    "QuotationTemplateResponse",
 ]
