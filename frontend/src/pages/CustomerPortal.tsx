@@ -3,13 +3,9 @@ import {
   FileSpreadsheet,
   Receipt,
   Download,
-  Calendar,
-  CreditCard,
   CheckCircle2,
-  AlertCircle,
   Pause,
   Play,
-  ArrowUpRight,
   ShieldCheck,
   User,
 } from 'lucide-react';
@@ -53,8 +49,33 @@ export const CustomerPortal: React.FC = () => {
   };
 
   useEffect(() => {
-    loadCustomerData();
-  }, [customerId]);
+    let active = true;
+    const fetchPortal = async () => {
+      try {
+        const [allSubs, allInvoices] = await Promise.all([
+          api.getSubscriptions(),
+          api.getInvoices(),
+        ]);
+        if (!active) return;
+        const mySubs = allSubs.filter(
+          (s) => s.customer_id === customerId || s.customer_email === currentUser?.email
+        );
+        const myInvoices = allInvoices.filter(
+          (i) => i.customer_id === customerId
+        );
+        setSubscriptions(mySubs);
+        setInvoices(myInvoices);
+      } catch (err) {
+        console.error('Failed to load customer portal data:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    void fetchPortal();
+    return () => {
+      active = false;
+    };
+  }, [customerId, currentUser?.email]);
 
   const handleTogglePause = async (sub: Subscription) => {
     const nextStatus = sub.status === 'Active' ? 'Paused' : 'Active';
@@ -110,6 +131,12 @@ export const CustomerPortal: React.FC = () => {
 
           {/* Quick Stats Pill */}
           <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3 text-right">
+              <div className="text-[10px] text-slate-400 font-medium">Active Plans</div>
+              <div className="font-mono text-base font-bold text-[#3B49DF]">
+                {activeSubsCount}
+              </div>
+            </div>
             <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3 text-right">
               <div className="text-[10px] text-slate-400 font-medium">Pending Due</div>
               <div className="font-mono text-base font-bold text-slate-900">
