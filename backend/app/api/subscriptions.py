@@ -285,7 +285,9 @@ def create_quotation(payload: QuotationCreateInput, session: Session = Depends(g
     if payload.customer_id is not None:
         user_id = _resolve_int_id(payload.customer_id)
         user = session.get(User, user_id)
-    if user is None and payload.customer_email:
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Customer with ID {payload.customer_id} not found")
+    elif payload.customer_email:
         user = session.exec(select(User).where(User.email == payload.customer_email)).first()
         if user is None:
             # Create on-the-fly customer record
@@ -298,19 +300,13 @@ def create_quotation(payload: QuotationCreateInput, session: Session = Depends(g
             session.add(user)
             session.flush()
     if user is None:
-        # Fallback to first user in system or admin
-        user = session.exec(select(User)).first()
-        if user is None:
-            raise HTTPException(status_code=400, detail="No customer found or specified")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Customer ID or customer email is required")
 
     # 2. Resolve plan
     plan_id = _resolve_int_id(payload.plan_id)
     plan = session.get(Plan, plan_id)
     if plan is None:
-        plan = session.exec(select(Plan)).first()
-        if plan is None:
-            raise HTTPException(status_code=404, detail="No subscription plan available")
-        plan_id = plan.id
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Plan with ID {payload.plan_id} not found")
 
     # 3. Resolve lines
     lines: list[SubscriptionLine] = []
@@ -318,10 +314,7 @@ def create_quotation(payload: QuotationCreateInput, session: Session = Depends(g
         p_id = _resolve_int_id(line.product_id)
         product = session.get(Product, p_id)
         if product is None:
-            product = session.exec(select(Product)).first()
-            if product is None:
-                raise HTTPException(status_code=404, detail="No product available")
-            p_id = product.id
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product with ID {line.product_id} not found")
 
         v_id: Optional[int] = None
         price_extra = 0.0

@@ -160,3 +160,32 @@ def test_subscription_filtering_and_deletion(client: TestClient):
     del_resp = client.delete(f"/api/subscriptions/{sub['id']}")
     assert del_resp.status_code == 204
     assert client.get(f"/api/subscriptions/{sub['id']}").status_code == 404
+
+
+def test_quotation_creation_rejects_invalid_ids(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    # Invalid customer ID must return 404
+    resp_bad_user = client.post(
+        "/api/quotations",
+        json={"customer_id": 99999, "plan_id": plan_id, "lines": [{"product_id": prod_id, "quantity": 1}]},
+    )
+    assert resp_bad_user.status_code == 404
+    assert "Customer with ID" in resp_bad_user.json()["detail"]
+
+    # Invalid plan ID must return 404
+    resp_bad_plan = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": 99999, "lines": [{"product_id": prod_id, "quantity": 1}]},
+    )
+    assert resp_bad_plan.status_code == 404
+    assert "Plan with ID" in resp_bad_plan.json()["detail"]
+
+    # Invalid product ID must return 404
+    resp_bad_prod = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "lines": [{"product_id": 99999, "quantity": 1}]},
+    )
+    assert resp_bad_prod.status_code == 404
+    assert "Product with ID" in resp_bad_prod.json()["detail"]
+
