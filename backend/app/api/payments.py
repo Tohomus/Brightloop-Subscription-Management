@@ -7,6 +7,7 @@ from sqlmodel import Field, Session, SQLModel, select
 
 from app.core.database import get_session
 from app.models.invoicing import Invoice, InvoiceStatus, Payment, PaymentMethod
+from app.api.dashboard import get_current_simulated_date
 
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
@@ -38,10 +39,14 @@ def record_payment(payload: PaymentCreate, session: Session = Depends(get_sessio
     payments = session.exec(select(Payment.amount).where(Payment.invoice_id == invoice.id)).all()
     paid = sum((Decimal(str(amount)) for amount in payments), Decimal("0.00"))
     total = Decimal(str(invoice.total))
+    sim_date = get_current_simulated_date()
     if paid >= total:
         invoice.status = InvoiceStatus.PAID
     elif paid > 0:
-        invoice.status = InvoiceStatus.PARTIALLY_PAID
+        if invoice.due_date < sim_date:
+            invoice.status = InvoiceStatus.OVERDUE
+        else:
+            invoice.status = InvoiceStatus.PARTIALLY_PAID
     session.add(invoice)
     session.commit()
     session.refresh(payment)
