@@ -398,6 +398,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  async checkHealth(): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE.replace('/api', '')}/health`);
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
   // Auth
   getCurrentUser(): User | null {
     const userStr = localStorage.getItem('brightloop_user');
