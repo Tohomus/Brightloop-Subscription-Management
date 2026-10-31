@@ -4,12 +4,9 @@ import {
   CreditCard,
   AlertTriangle,
   FileCheck2,
-  Calendar,
   DollarSign,
   ArrowUpRight,
   ShieldAlert,
-  Sparkles,
-  Layers,
   ArrowRight,
   RefreshCw,
 } from 'lucide-react';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Printer, CheckCircle, AlertCircle, Clock, ShieldCheck, Building2 } from 'lucide-react';
+import { X, Printer, CheckCircle, AlertCircle, Clock, Building2 } from 'lucide-react';
 import type { Invoice } from '../types';
 
 interface InvoicePrintModalProps {
