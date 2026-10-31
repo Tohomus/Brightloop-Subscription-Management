@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, func
 from decimal import Decimal
 
-from app.core.database import get_session
-from app.models.billing import Subscription, SubscriptionStatus, SubscriptionLine
+from app.core.database import get_session, engine
+from app.models.billing import Subscription, SubscriptionStatus, SubscriptionLine, SystemClock
 from app.models.catalog import Plan, BillingFrequency
 from app.models.invoicing import Invoice, InvoiceStatus, Payment
 from app.services.billing_runner import run_billing
@@ -14,18 +14,48 @@ from app.services.billing_runner import run_billing
 router = APIRouter(prefix="/api", tags=["dashboard", "simulation"])
 
 
-# In-memory / module-level system simulated date tracker
+# Fallback tracker with database persistence
 _system_simulated_date: date = date.today()
 
 
-def get_current_simulated_date() -> date:
+def get_current_simulated_date(session: Optional[Session] = None) -> date:
     global _system_simulated_date
+    try:
+        if session is not None:
+            clock = session.get(SystemClock, 1)
+            if clock:
+                return clock.simulated_date
+        else:
+            with Session(engine) as s:
+                clock = s.get(SystemClock, 1)
+                if clock:
+                    return clock.simulated_date
+    except Exception:
+        pass
     return _system_simulated_date
 
 
-def set_current_simulated_date(new_date: date) -> date:
+def set_current_simulated_date(new_date: date, session: Optional[Session] = None) -> date:
     global _system_simulated_date
     _system_simulated_date = new_date
+    try:
+        def _persist(s: Session):
+            clock = s.get(SystemClock, 1)
+            if not clock:
+                clock = SystemClock(id=1, simulated_date=new_date)
+            else:
+                clock.simulated_date = new_date
+            s.add(clock)
+            s.commit()
+            return clock.simulated_date
+
+        if session is not None:
+            return _persist(session)
+        else:
+            with Session(engine) as s:
+                return _persist(s)
+    except Exception:
+        pass
     return _system_simulated_date
 
 
@@ -41,7 +71,7 @@ def get_dashboard_summary(session: Session = Depends(get_session)) -> Dict[str, 
     - Outstanding Receivables (unpaid balances on confirmed/overdue invoices)
     - Overdue Invoices Count & Aging Buckets (1-30d, 31-60d, 60+d)
     """
-    sim_date = get_current_simulated_date()
+    sim_date = get_current_simulated_date(session)
 
     # 1. Active Subscriptions Count & MRR Calculation
     active_subs = session.exec(
@@ -167,10 +197,10 @@ def time_travel(
     if explicit_date:
         target_date = date.fromisoformat(explicit_date)
     else:
-        current_date = get_current_simulated_date()
+        current_date = get_current_simulated_date(session)
         target_date = current_date + timedelta(days=advance_days)
 
-    set_current_simulated_date(target_date)
+    set_current_simulated_date(target_date, session)
 
     # 1. Run billing runner up to target date
     billing_result = run_billing(session, target_date)
