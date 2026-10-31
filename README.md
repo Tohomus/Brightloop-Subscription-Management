@@ -12,59 +12,56 @@ Built for the Odoo × CUSAT Make-a-ton 2.0 Hackathon.
 
 ---
 
-## Executive Summary
+## Overview
 
-Brightloop replaces disconnected spreadsheets, manual bank slip reconciliation, and fragile billing scripts with a single source of truth for subscription operations. 
-
-Subscription companies lose between 5% and 15% of annual recurring revenue through untracked mid-cycle pauses, missed renewals, manual invoice drafting, and silent double-billing errors. Brightloop automates the entire contract lifecycle—from multi-variant quotation drafting to idempotent billing execution, automated tax and discount calculation, and accounts receivable reconciliation—with zero external daemon dependencies.
+Brightloop is an automated subscription management and recurring billing platform designed for recurring B2B/B2C service contracts. It centralizes quotation drafting, contract state transitions, automated invoice generation, multi-tier tax and discount calculations, and accounts receivable tracking into a unified, zero-daemon architecture.
 
 ---
 
-## The 2-Minute Judging Pitch & Live Demo Script
+## Core System Capabilities
 
-Judges evaluate multiple projects in rapid succession. This script delivers a working, verified end-to-end flow without slides.
+### 1. Deterministic Idempotent Billing Engine
+- Evaluates active subscriptions against billing schedule triggers (`daily`, `weekly`, `monthly`, `yearly`).
+- Enforces strict idempotency keys formatted as `${subscription_id}_${period_start}`.
+- Re-running the billing process on the same date safely skips already-generated invoices with zero duplicate charges or orphan line items.
 
-### Minute 0:00 - 0:30 | The Ground Truth & Executive Overview
-- **Opening Statement:**  
-  *"Subscription companies constantly leak revenue through manual spreadsheets, forgotten renewals, and double-billing errors. Brightloop is an automated, idempotent subscription lifecycle engine that guarantees exact billing day execution with zero human touch."*
-- **Action:** Open the **Executive Dashboard** (`/`).
-- **Showcase:**  
-  - Real-time aggregation of Monthly Recurring Revenue (MRR), Annual Run Rate (ARR), Total Cash Collected, and Outstanding Receivables.
-  - Aging receivables buckets (1–30 days, 31–60 days, 60+ critical days) computed directly from SQLite tables with sub-second response times.
+### 2. State-Machine Contract Lifecycle
+- Enforces valid contract states at the API and database levels:
+  `Draft -> Quotation -> Confirmed -> Active <-> Paused -> Closed`.
+- **Direct Quotation Termination:** Permits closing rejected or lost quotations directly without requiring active conversion.
+- **Safe Resumption Date Handling:** When unpausing a subscription (`Paused -> Active`), the engine advances `next_billing_date` to the current date if the pause period lapsed, preventing retroactive billing for paused periods.
+- **Contract Voiding & Cleanup:** Terminating a contract automatically cancels unconfirmed draft invoices and releases reserved promotional coupon usage.
 
-### Minute 0:30 - 1:15 | The Hero Workflow (Quotation to Cash)
-1. **Catalog & Dynamic Variant Pricing (`/catalog`):**
-   - Demonstrate a software product (base price \$1,200.00) configured with dynamic attribute variants (e.g. `Edition: Odoo Sync` adding +\$560.00). The engine calculates the line price dynamically:  
-     $$\text{Unit Price} = P_{\text{base}} + \Delta P_{\text{variant}} = \$1{,}200.00 + \$560.00 = \$1{,}760.00$$
-2. **Quotation Generation & Activation (`/subscriptions`):**
-   - Draft a multi-line offer for a corporate client.
-   - Confirm the quotation into an active contract. Show the state machine transition:  
-     $$\text{Quotation} \longrightarrow \text{Active}$$
-3. **The Chrono-Simulator ("Billing Time Machine"):**
-   - Advance the system simulation clock by +30 days.
-   - The backend billing runner evaluates active subscriptions, detects due billing dates, and generates confirmed draft invoices with applied tax and discount rules.
-   - Re-triggering the billing run demonstrates strict **idempotency**: duplicate runs skip already-billed cycles with zero duplicate charges.
-4. **Payment Registration & Ledger Reconciliation (`/invoices`):**
-   - Record an electronic payment against an open invoice.
-   - Watch the invoice status flip to `Paid` in real-time, instantly reducing Outstanding Receivables and increasing Cash Collected on the Executive Dashboard.
+### 3. Dynamic Variant Pricing & Margin Tracking
+- Products support dynamic attribute modifiers (e.g., base product at \$1,200.00 with variant `Edition: Odoo Sync` adding +\$560.00).
+- Calculates unit sales pricing and gross margin on the fly:
+  $$\text{Unit Price} = P_{\text{base}} + \sum \Delta P_{\text{variant}}$$
 
-### Minute 1:15 - 1:45 | Technical Architecture & Defensibility
-- **Composite Key Idempotency:** Billing runs enforce unique constraint keys `${subscription_id}_${period_start}`. Network timeouts or parallel runs never double-bill.
-- **Contract State Engine:** Subscriptions adhere to a strict state machine (`Draft -> Quotation -> Confirmed -> Active <-> Paused -> Closed`). Resuming paused accounts advances the billing anchor forward to avoid retroactively charging for paused periods.
-- **Strict Role Boundaries:** Multi-tenant customer portal (`/portal`) enforces database-level tenant isolation. Customers view and download only their own contracts and letterhead invoices.
-- **Zero-Daemon Architecture:** Fully functional with local Python and SQLite WAL mode. No Redis, Celery, PostgreSQL, or enterprise ERP daemons required.
+### 4. Precision Tax & Discount Engines
+- **Price-Exclusive Taxes:** Automatically calculated per line item and added to invoice subtotal.
+  $$\text{Tax Amount} = (\text{Subtotal} - \text{Discount}) \times \frac{\text{Rate}}{100}$$
+- **Price-Included Taxes:** Extracted from gross line total without double-counting tax on the invoice ledger.
+  $$\text{Tax Amount} = (\text{Subtotal} - \text{Discount}) \times \frac{\text{Rate}}{100 + \text{Rate}}$$
+- **Discount Allocation:** Supports line-item product discounts and whole-subscription header promotions with threshold constraints (`min_purchase_amount`, `min_quantity`) and usage counters.
+- **Usage Reservation:** Coupon usage increments on draft generation and decrements immediately if the draft is cancelled, preventing quota lockouts.
 
-### Minute 1:45 - 2:00 | Conclusion
-- **Closing Statement:**  
-  *"Brightloop delivers enterprise-grade billing logic in a lightweight, self-contained architecture. It is resilient, audit-proof, and production-ready."*
+### 5. Financial Telemetry & Overdue Aging
+- Computes real-time Monthly Recurring Revenue (MRR), Annual Run Rate (ARR), Total Cash Collected, and Outstanding Accounts Receivable directly from SQLite tables with sub-second response times.
+- Automated aging categorization tracks delinquent invoices across standard operational buckets: 1–30 days, 31–60 days, and 60+ critical days overdue.
+
+### 6. Isolated Customer Self-Service Portal (`/portal`)
+- Authenticated client interface enforcing strict tenant isolation.
+- Customers view only their active subscriptions, view billing history, toggle contract pauses, and download printable letterhead PDF invoices.
+
+### 7. Chrono-Simulator ("Billing Time Machine")
+- Persistent simulated system clock stored in the database.
+- Allows teams to advance simulated dates (`+1 Day`, `+7 Days`, `+30 Days`) to test recurring invoice generation, contract expiration, and overdue aging triggers deterministically.
 
 ---
 
-## Technical Highlights & Mathematical Models
+## Architectural Models & Specifications
 
-### 1. Subscription Lifecycle State Machine
-
-The contract engine enforces valid transitions at the database model and API levels:
+### Subscription Lifecycle State Machine
 
 ```text
                +-------------------------------------------+
@@ -78,46 +75,26 @@ The contract engine enforces valid transitions at the database model and API lev
                                    [ Closed ]  (Terminal)
 ```
 
-- **Quotation Direct Close:** Sales reps can close rejected or lost quotations directly without requiring artificial confirmation.
-- **Safe Pause & Resume:** When unpausing a subscription (`Paused -> Active`), the backend automatically updates `next_billing_date` to the current date if the pause period lapsed, preventing retroactive billing for paused months.
-- **Safe Contract Termination:** Closing an active or paused contract voids open, unconfirmed draft invoices and releases reserved promotional coupon usage.
+### Engineering Invariants & Design Decisions
 
-### 2. Tax & Discount Engine
-
-The billing runner calculates line-item and header adjustments with cent-level decimal precision:
-
-- **Price-Exclusive Tax:**
-  $$\text{Tax Amount} = (\text{Line Subtotal} - \text{Discount}) \times \frac{\text{Rate}}{100}$$
-  $$\text{Line Total} = (\text{Line Subtotal} - \text{Discount}) + \text{Tax Amount}$$
-
-- **Price-Included Tax:**
-  $$\text{Tax Amount} = (\text{Line Subtotal} - \text{Discount}) \times \frac{\text{Rate}}{100 + \text{Rate}}$$
-  $$\text{Line Total} = \text{Line Subtotal} - \text{Discount}$$
-
-- **Discount Coupon Reservation:**
-  - Product-scope discounts apply directly to designated line items.
-  - Subscription-scope discounts apply to the net subtotal before tax.
-  - Coupon usage (`rule.uses`) increments upon draft invoice generation and decrements immediately if the invoice is cancelled, preventing quota lockouts.
-
-### 3. Chrono-Simulator ("Billing Time Machine")
-
-To enable live evaluations without waiting weeks for calendar triggers, Brightloop includes a persistent simulation clock:
-- System time can be advanced via API (`POST /api/simulation/time-travel`) or UI controls (`+1 Day`, `+7 Days`, `+30 Days`).
-- The clock state persists in SQLite table `system_clock` across server restarts.
-- Auto-aging reconciles invoices against the simulated date: past-due invoices automatically transition to `Overdue` status.
+- **Anchor-Day Preservation:** Monthly billing preserves the initial contract start day (`subscription.start_date.day`). A contract starting on January 31 clamps to February 28, then returns to March 31 rather than permanently drifting backward.
+- **Zero-Dollar Invoice Handling:** Invoices discounted to \$0.00 (e.g., 100% promotional credits) automatically transition to `Paid` upon confirmation, preventing them from becoming unpayable and overdue.
+- **Payment Overfill Prevention:** Payment recording validates `amount <= remaining_balance`, preventing accidental overpayments and negative accounts receivable.
+- **Database-Level Tenant Isolation:** Customer queries are strictly parameterized by `customer_id == current_user.id`. Customers cannot inspect global tables or modify administrative parameters.
+- **Zero-Daemon Deployment:** The platform requires no external daemon processes (no Redis, Celery, or external database servers). Everything runs on standard Python and SQLite with Write-Ahead Logging (WAL) and foreign keys enabled.
 
 ---
 
-## System Architecture
+## System Structure
 
 ```text
 Brightloop-Subscription-Management/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                    # REST API Route Controllers
+│   │   ├── api/                    # REST API Controllers
 │   │   │   ├── auth.py             # User registration, login, JWT issuance
 │   │   │   ├── billing.py          # Manual billing runner triggers, taxes, discounts
-│   │   │   ├── dashboard.py        # Executive revenue metrics (< 2s SLA), clock
+│   │   │   ├── dashboard.py        # Executive revenue metrics, simulation clock
 │   │   │   ├── invoices.py         # Invoice serialization, confirmation, cancellation
 │   │   │   ├── payments.py         # Payment recording & AR reconciliation
 │   │   │   ├── plans.py            # Plan frequencies, minimum order quantities
@@ -133,16 +110,16 @@ Brightloop-Subscription-Management/
 │   │   │   └── tax_discount_calc.py# Cent-level decimal tax and discount math
 │   │   └── main.py                 # FastAPI application mount, CORS middleware
 │   ├── tests/                      # Pytest automated test suite
-│   ├── seed.py                     # Realistic database seeder
-│   └── requirements.txt            # Locked Python backend dependencies
+│   ├── seed.py                     # Database seeder
+│   └── requirements.txt            # Python dependencies
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── components/             # Reusable UI primitives
 │   │   │   ├── Navbar.tsx          # Navigation header & persona selector
 │   │   │   ├── Sidebar.tsx         # Operational navigation rail
-│   │   │   ├── TimeMachine.tsx     # Chrono-Simulator controls (+1 / +7 / +30 days)
-│   │   │   └── InvoicePrintModal.tsx # Letterhead invoice printable modal
+│   │   │   ├── TimeMachine.tsx     # Chrono-Simulator controls
+│   │   │   └── InvoicePrintModal.tsx # Printable letterhead invoice layout
 │   │   ├── pages/                  # Page-level route views
 │   │   │   ├── ExecutiveDashboard.tsx # Revenue telemetry, MRR/ARR, overdue aging
 │   │   │   ├── CatalogPage.tsx     # Products, variants, plans, and templates
@@ -212,7 +189,7 @@ npm run dev
 
 ### 3. Running Automated Tests
 ```bash
-# From the repository root with backend venv activated:
+# From repository root with backend virtual environment activated:
 $env:PYTHONPATH="backend"; backend\venv\Scripts\pytest backend\tests -v
 
 # Linux / macOS:
@@ -223,7 +200,7 @@ $env:PYTHONPATH="backend"; backend\venv\Scripts\pytest backend\tests -v
 
 ## Pre-Seeded Test Credentials
 
-The database seeder (`backend/seed.py`) provisions four pre-configured accounts representing distinct user personas:
+The database seeder (`backend/seed.py`) provisions accounts for distinct user personas:
 
 | Persona | Email | Password | Primary Capabilities |
 |---|---|---|---|
@@ -293,23 +270,7 @@ The database seeder (`backend/seed.py`) provisions four pre-configured accounts 
 
 ---
 
-## Anticipated Judge Questions & Technical Defenses
-
-### Q1: How do you handle month-end billing when months have 28, 30, or 31 days?
-**Defense:** Billing cycles preserve the original anchor day (`subscription.start_date.day`). If a subscription starts on January 31, the February billing date clamps to February 28 (`min(31, 28)`), but the subsequent March billing date returns to March 31 rather than permanently drifting backwards.
-
-### Q2: What happens if the billing runner crashes halfway through a run?
-**Defense:** Billing executions are transactional and idempotent. Every invoice carries a composite key `${subscription_id}_${period_start}`. Re-triggering the billing runner evaluates only unbilled cycles and skips already-created invoices, preventing duplicate charges or orphan line items.
-
-### Q3: How do you prevent customers from accessing other accounts' contracts?
-**Defense:** All routes are protected by server-side role middleware. The `/portal` endpoints force parameterized scoping where queries are strictly bounded by `customer_id == current_user.id`. Customers cannot inspect global tables or modify administrative parameters.
-
-### Q4: Why not simply use Stripe Billing or an off-the-shelf CRM?
-**Defense:** Stripe Billing handles payment gateway transactions, but does not manage internal enterprise operations such as cost-of-goods tracking (`cost_price`), gross margin calculation, custom staff quotation templates, or price-included municipal tax rules. Brightloop acts as the core subscription ERP, which can plug into any payment gateway.
-
----
-
-## Team Work Split & Track Ownership
+## Team & Track Ownership
 
 Development was executed across parallel tracks with verified boundaries:
 
