@@ -552,6 +552,30 @@ export const api = {
     }
   },
 
+  async updateProduct(id: string, product: Partial<Product>): Promise<Product> {
+    try {
+      return await request<Product>(`/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(product),
+      });
+    } catch {
+      const idx = productsStore.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        productsStore[idx] = { ...productsStore[idx], ...product };
+        return productsStore[idx];
+      }
+      throw new Error('Product not found');
+    }
+  },
+
+  async deleteProduct(id: string): Promise<void> {
+    try {
+      await request<void>(`/products/${id}`, { method: 'DELETE' });
+    } catch {
+      productsStore = productsStore.filter((p) => p.id !== id);
+    }
+  },
+
   // Plans
   async getPlans(): Promise<Plan[]> {
     try {
@@ -574,6 +598,30 @@ export const api = {
       };
       plansStore = [newPlan, ...plansStore];
       return newPlan;
+    }
+  },
+
+  async updatePlan(id: string, plan: Partial<Plan>): Promise<Plan> {
+    try {
+      return await request<Plan>(`/plans/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(plan),
+      });
+    } catch {
+      const idx = plansStore.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        plansStore[idx] = { ...plansStore[idx], ...plan };
+        return plansStore[idx];
+      }
+      throw new Error('Plan not found');
+    }
+  },
+
+  async deletePlan(id: string): Promise<void> {
+    try {
+      await request<void>(`/plans/${id}`, { method: 'DELETE' });
+    } catch {
+      plansStore = plansStore.filter((p) => p.id !== id);
     }
   },
 
