@@ -49,8 +49,33 @@ export const CustomerPortal: React.FC = () => {
   };
 
   useEffect(() => {
-    loadCustomerData();
-  }, [customerId]);
+    let active = true;
+    const fetchPortal = async () => {
+      try {
+        const [allSubs, allInvoices] = await Promise.all([
+          api.getSubscriptions(),
+          api.getInvoices(),
+        ]);
+        if (!active) return;
+        const mySubs = allSubs.filter(
+          (s) => s.customer_id === customerId || s.customer_email === currentUser?.email
+        );
+        const myInvoices = allInvoices.filter(
+          (i) => i.customer_id === customerId
+        );
+        setSubscriptions(mySubs);
+        setInvoices(myInvoices);
+      } catch (err) {
+        console.error('Failed to load customer portal data:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    void fetchPortal();
+    return () => {
+      active = false;
+    };
+  }, [customerId, currentUser?.email]);
 
   const handleTogglePause = async (sub: Subscription) => {
     const nextStatus = sub.status === 'Active' ? 'Paused' : 'Active';
@@ -70,6 +95,7 @@ export const CustomerPortal: React.FC = () => {
   };
 
   // Rollups for customer overview
+  const activeSubsCount = subscriptions.filter((s) => s.status === 'Active').length;
   const totalPaid = invoices.reduce((acc, i) => acc + (i.amount_paid || 0), 0);
   const pendingDue = invoices
     .filter((i) => i.status === 'Confirmed' || i.status === 'Overdue')
@@ -105,6 +131,12 @@ export const CustomerPortal: React.FC = () => {
 
           {/* Quick Metrics Pills */}
           <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-gray-50 border border-gray-200/80 p-3.5 text-right min-w-[120px]">
+              <div className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Active Plans</div>
+              <div className="font-mono text-base font-bold text-neutral-900 mt-0.5 tabular-nums">
+                {activeSubsCount}
+              </div>
+            </div>
             <div className="rounded-xl bg-gray-50 border border-gray-200/80 p-3.5 text-right min-w-[120px]">
               <div className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Pending Due</div>
               <div className="font-mono text-base font-bold text-neutral-900 mt-0.5 tabular-nums">

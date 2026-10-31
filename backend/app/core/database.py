@@ -30,6 +30,14 @@ def create_db_and_tables() -> None:
     """Creates all database tables defined by SQLModel classes if they don't exist."""
     import app.models  # noqa: F401
     SQLModel.metadata.create_all(engine)
+    with engine.connect() as conn:
+        cursor = conn.connection.cursor()
+        cols = [col[1] for col in cursor.execute("PRAGMA table_info(invoice_lines)").fetchall()]
+        if cols and "price_included" not in cols:
+            cursor.execute("ALTER TABLE invoice_lines ADD COLUMN price_included BOOLEAN DEFAULT 0")
+        if cols and "tax_rule_id" not in cols:
+            cursor.execute("ALTER TABLE invoice_lines ADD COLUMN tax_rule_id INTEGER")
+        cursor.close()
 
 
 def get_session() -> Generator[Session, None, None]:

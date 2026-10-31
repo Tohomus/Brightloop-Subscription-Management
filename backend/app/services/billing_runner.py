@@ -2,7 +2,7 @@ import calendar
 from datetime import date, timedelta
 from sqlmodel import Session, select
 
-from app.models.billing import Subscription, SubscriptionStatus
+from app.models.billing import DiscountRule, Subscription, SubscriptionStatus
 from app.models.catalog import BillingFrequency, Plan, Product
 from app.models.invoicing import Invoice, InvoiceDiscountUse, InvoiceLine, InvoiceStatus
 from app.services.tax_discount_calc import calculate_lines
@@ -49,6 +49,11 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
                     session.add(subscription)
                 break
 
+            if subscription.expiry_date is not None and cycle_start > subscription.expiry_date:
+                subscription.status = SubscriptionStatus.CLOSED
+                session.add(subscription)
+                break
+
             key = f"{subscription.id}_{cycle_start.isoformat()}"
             existing = session.exec(select(Invoice.id).where(Invoice.idempotency_key == key)).first()
             next_billing_date = _advance(cycle_start, plan.frequency)
@@ -89,6 +94,10 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
             invoice.invoice_number = f"INV-{simulated_date.year}-{invoice.id:04d}"
             for rule_id in discount_rule_ids:
                 session.add(InvoiceDiscountUse(invoice_id=invoice.id, discount_rule_id=rule_id))
+                rule = session.get(DiscountRule, rule_id)
+                if rule is not None:
+                    rule.uses += 1
+                    session.add(rule)
             subscription.next_billing_date = next_billing_date
             generated += 1
 

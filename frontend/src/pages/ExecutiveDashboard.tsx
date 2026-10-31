@@ -36,16 +36,34 @@ export const ExecutiveDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    const fetchSummary = async () => {
+      try {
+        const data = await dashboardService.getDashboardSummary();
+        if (!active) return;
+        setSummary(data);
+        setSimulatedDate(dashboardService.getSimulatedDate());
+        setLastRefreshed(new Date().toLocaleTimeString());
+      } catch (err) {
+        console.error('Failed to load executive dashboard summary:', err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    void fetchSummary();
 
     // Listen to real-time events triggered by the Chrono-Simulator TimeMachine
     const unsubscribe = dashboardService.subscribe((updatedSummary, newDate) => {
+      if (!active) return;
       setSummary(updatedSummary);
       setSimulatedDate(newDate);
       setLastRefreshed(new Date().toLocaleTimeString());
     });
 
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const totalAgingOverdue = summary
