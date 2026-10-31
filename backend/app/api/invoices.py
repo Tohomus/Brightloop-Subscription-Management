@@ -56,7 +56,16 @@ def serialize_invoice(invoice: Invoice, session: Session) -> InvoiceResponse:
 
     lines_resp: list[InvoiceLineResponse] = []
     for line in invoice.lines:
-        line_total = float(Decimal(str(line.line_subtotal)) + Decimal(str(line.tax_amount)) - Decimal(str(line.discount_amount)))
+        is_price_inc = getattr(line, "price_included", False)
+        exclusive_tax = Decimal("0.00") if is_price_inc else Decimal(str(line.tax_amount))
+        line_total = float(Decimal(str(line.line_subtotal)) - Decimal(str(line.discount_amount)) + exclusive_tax)
+        tax_rate = 0.0
+        tax_rule_id = getattr(line, "tax_rule_id", None)
+        if tax_rule_id:
+            from app.models.billing import TaxRule
+            tr = session.get(TaxRule, tax_rule_id)
+            if tr:
+                tax_rate = tr.amount
         lines_resp.append(
             InvoiceLineResponse(
                 id=line.id,
@@ -64,7 +73,7 @@ def serialize_invoice(invoice: Invoice, session: Session) -> InvoiceResponse:
                 description=line.description,
                 quantity=line.quantity,
                 unit_price=line.unit_price,
-                tax_rate=0.0,
+                tax_rate=tax_rate,
                 tax_amount=line.tax_amount,
                 discount_amount=line.discount_amount,
                 line_total=line_total,

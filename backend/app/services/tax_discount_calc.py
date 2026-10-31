@@ -70,6 +70,8 @@ def calculate_lines(
             "line_subtotal": float(gross),
             "discount_amount": float(discount),
             "tax_amount": 0.0,
+            "tax_rule_id": line.tax_rule_id,
+            "price_included": bool(tax_rule.price_included) if tax_rule else False,
             "_tax_rule": tax_rule,
             "_net_before_header_discount": gross - discount,
         })

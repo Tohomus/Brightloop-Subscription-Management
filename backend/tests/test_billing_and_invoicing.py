@@ -233,3 +233,42 @@ def test_overdue_invoice_retains_overdue_on_partial_payment(client: TestClient):
     # Reset simulator back to today
     set_current_simulated_date(date.today())
 
+
+def test_price_included_tax_line_total(client: TestClient):
+    # Setup customer, product, and plan
+    u = client.post("/api/auth/register", json={"email": "vat@test.com", "password": "Password123!", "role": "customer"}).json()
+    p = client.post("/api/products", json={"name": "Inclusive SaaS", "type": "software", "sales_price": 100.0, "cost_price": 20.0, "variants": []}).json()
+    plan = client.post("/api/plans", json={"name": "VAT Monthly", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-10-01"}).json()
+
+    # Tax rule with price_included = True (10% VAT included in price)
+    tax = client.post(
+        "/api/taxes",
+        json={"name": "VAT 10% Incl", "tax_type": "percent", "amount": 10.0, "price_included": True, "is_active": True},
+    ).json()
+
+    sub = client.post(
+        "/api/quotations",
+        json={
+            "customer_id": u["id"],
+            "plan_id": plan["id"],
+            "start_date": "2026-10-01",
+            "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 100.0, "tax_rule_id": tax["id"]}],
+        },
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    inv = client.get("/api/invoices").json()[0]
+
+    # Invoice header total must be 100.0 (price included)
+    assert inv["subtotal"] == 100.0
+    assert inv["total_amount"] == 100.0
+    assert round(inv["tax_amount"], 2) == 9.09
+
+    # Line total must equal 100.0 (not double counted to 109.09)
+    assert len(inv["lines"]) == 1
+    line = inv["lines"][0]
+    assert line["line_total"] == 100.0
+    assert line["tax_rate"] == 10.0
+
+
