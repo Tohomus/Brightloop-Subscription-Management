@@ -54,6 +54,8 @@ class InvoiceLine(SQLModel, table=True):
     tax_amount: float = Field(default=0.0, ge=0)
     discount_amount: float = Field(default=0.0, ge=0)
     discount_rule_id: Optional[int] = Field(default=None, foreign_key="discount_rules.id")
+    tax_rule_id: Optional[int] = Field(default=None, foreign_key="tax_rules.id")
+    price_included: bool = Field(default=False)
     invoice: Optional[Invoice] = Relationship(back_populates="lines")
 
 

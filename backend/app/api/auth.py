@@ -105,6 +105,7 @@ def login(payload: UserLogin, session: Session = Depends(get_session)):
         token_type="bearer",
         role=user.role,
         user_id=user.id,
+        customer_id=user.id if user.role == UserRole.CUSTOMER else None,
         email=user.email,
     )
 

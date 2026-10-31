@@ -233,3 +233,142 @@ def test_overdue_invoice_retains_overdue_on_partial_payment(client: TestClient):
     # Reset simulator back to today
     set_current_simulated_date(date.today())
 
+
+def test_price_included_tax_line_total(client: TestClient):
+    # Setup customer, product, and plan
+    u = client.post("/api/auth/register", json={"email": "vat@test.com", "password": "Password123!", "role": "customer"}).json()
+    p = client.post("/api/products", json={"name": "Inclusive SaaS", "type": "software", "sales_price": 100.0, "cost_price": 20.0, "variants": []}).json()
+    plan = client.post("/api/plans", json={"name": "VAT Monthly", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-10-01"}).json()
+
+    # Tax rule with price_included = True (10% VAT included in price)
+    tax = client.post(
+        "/api/taxes",
+        json={"name": "VAT 10% Incl", "tax_type": "percent", "amount": 10.0, "price_included": True, "is_active": True},
+    ).json()
+
+    sub = client.post(
+        "/api/quotations",
+        json={
+            "customer_id": u["id"],
+            "plan_id": plan["id"],
+            "start_date": "2026-10-01",
+            "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 100.0, "tax_rule_id": tax["id"]}],
+        },
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    inv = client.get("/api/invoices").json()[0]
+
+    # Invoice header total must be 100.0 (price included)
+    assert inv["subtotal"] == 100.0
+    assert inv["total_amount"] == 100.0
+    assert round(inv["tax_amount"], 2) == 9.09
+
+    # Line total must equal 100.0 (not double counted to 109.09)
+    assert len(inv["lines"]) == 1
+    line = inv["lines"][0]
+    assert line["line_total"] == 100.0
+    assert line["tax_rate"] == 10.0
+
+
+def test_subscription_expiry_date_halts_billing(client: TestClient):
+    from datetime import date
+    from app.models.billing import Subscription
+
+    u = client.post("/api/auth/register", json={"email": "expired@test.com", "password": "Password123!", "role": "customer"}).json()
+    p = client.post("/api/products", json={"name": "Term SaaS", "type": "software", "sales_price": 500.0, "cost_price": 100.0, "variants": []}).json()
+    plan = client.post("/api/plans", json={"name": "Monthly Term", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-01-01"}).json()
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": u["id"], "plan_id": plan["id"], "start_date": "2026-01-01", "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 500.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    # Set expiry_date to 2026-03-15 on test_engine
+    with Session(test_engine) as s:
+        db_sub = s.get(Subscription, sub["id"])
+        db_sub.expiry_date = date(2026, 3, 15)
+        s.add(db_sub)
+        s.commit()
+
+    # Run billing up to 2026-05-01 (past expiry_date 2026-03-15)
+    run_res = client.post("/api/billing/run", json={"simulated_date": "2026-05-01"}).json()
+    # Cycles: 2026-01-01 (gen 1), 2026-02-01 (gen 2), 2026-03-01 (gen 3), 2026-04-01 is > 2026-03-15 (closed, not generated)
+    assert run_res["generated"] == 3
+
+    # Check that subscription is now Closed
+    sub_closed = client.get(f"/api/subscriptions/{sub['id']}").json()
+    assert sub_closed["status"] == "Closed"
+
+
+def test_discount_reservation_and_confirmation_lifecycle(client: TestClient):
+    from app.models.billing import DiscountRule
+
+    u1 = client.post("/api/auth/register", json={"email": "d1@test.com", "password": "Password123!", "role": "customer"}).json()
+    u2 = client.post("/api/auth/register", json={"email": "d2@test.com", "password": "Password123!", "role": "customer"}).json()
+    p = client.post("/api/products", json={"name": "Discounted App", "type": "software", "sales_price": 100.0, "cost_price": 10.0, "variants": []}).json()
+    plan = client.post("/api/plans", json={"name": "Disc Monthly", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-10-01"}).json()
+
+    # Create discount with max_uses = 1
+    disc = client.post(
+        "/api/discounts",
+        json={
+            "name": "Limit 1 Promo",
+            "discount_type": "fixed",
+            "scope": "product",
+            "amount": 20.0,
+            "product_id": p["id"],
+            "max_uses": 1,
+            "is_active": True,
+        },
+    ).json()
+
+    # Sub 1 with discount
+    s1 = client.post(
+        "/api/quotations",
+        json={"customer_id": u1["id"], "plan_id": plan["id"], "start_date": "2026-10-01", "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 100.0, "discount_rule_id": disc["id"]}]},
+    ).json()
+    client.post(f"/api/quotations/{s1['id']}/confirm")
+
+    # Sub 2 with discount
+    s2 = client.post(
+        "/api/quotations",
+        json={"customer_id": u2["id"], "plan_id": plan["id"], "start_date": "2026-10-01", "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 100.0, "discount_rule_id": disc["id"]}]},
+    ).json()
+    client.post(f"/api/quotations/{s2['id']}/confirm")
+
+    # Run billing: s1 gets the discount (uses increments to 1). s2 evaluated next: max_uses reached, so s2 gets no discount
+    run_res = client.post("/api/billing/run", json={"simulated_date": "2026-10-01"}).json()
+    assert run_res["generated"] == 2
+
+    invoices = client.get("/api/invoices").json()
+    inv_s1 = next(i for i in invoices if i["subscription_id"] == s1["id"])
+    inv_s2 = next(i for i in invoices if i["subscription_id"] == s2["id"])
+
+    # s1 has discount applied (100 - 20 = 80)
+    assert inv_s1["total_amount"] == 80.0
+    # s2 does not have discount (100) because max_uses was 1
+    assert inv_s2["total_amount"] == 100.0
+
+    # Both invoices can be confirmed without any 409 conflict
+    conf1 = client.post(f"/api/invoices/{inv_s1['id']}/confirm")
+    assert conf1.status_code == 200
+    assert conf1.json()["status"] == "Confirmed"
+
+    conf2 = client.post(f"/api/invoices/{inv_s2['id']}/confirm")
+    assert conf2.status_code == 200
+    assert conf2.json()["status"] == "Confirmed"
+
+    # Cancelling invoice releases the discount use
+    cancel1 = client.post(f"/api/invoices/{inv_s1['id']}/cancel")
+    assert cancel1.status_code == 200
+    assert cancel1.json()["status"] == "Cancelled"
+
+    with Session(test_engine) as s:
+        d_rule = s.get(DiscountRule, disc["id"])
+        assert d_rule.uses == 0
+
+
+
