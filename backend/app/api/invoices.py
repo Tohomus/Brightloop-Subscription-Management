@@ -9,6 +9,7 @@ from app.core.database import get_session
 from app.models.billing import DiscountRule, Subscription
 from app.models.invoicing import Invoice, InvoiceDiscountUse, InvoiceStatus, Payment
 from app.models.auth import User
+from app.api.dashboard import get_current_simulated_date
 
 
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
@@ -101,10 +102,11 @@ def list_invoices(
     status: Optional[InvoiceStatus] = None,
     session: Session = Depends(get_session),
 ):
+    sim_date = get_current_simulated_date()
     expired = session.exec(
         select(Invoice)
-        .where(Invoice.status == InvoiceStatus.CONFIRMED)
-        .where(Invoice.due_date < date.today())
+        .where(Invoice.status.in_([InvoiceStatus.CONFIRMED, InvoiceStatus.PARTIALLY_PAID]))
+        .where(Invoice.due_date < sim_date)
     ).all()
     for invoice in expired:
         invoice.status = InvoiceStatus.OVERDUE
@@ -126,6 +128,12 @@ def get_invoice(invoice_id: int, session: Session = Depends(get_session)):
     invoice = session.get(Invoice, invoice_id)
     if invoice is None:
         raise HTTPException(status_code=404, detail="Invoice not found")
+    sim_date = get_current_simulated_date()
+    if invoice.status in [InvoiceStatus.CONFIRMED, InvoiceStatus.PARTIALLY_PAID] and invoice.due_date < sim_date:
+        invoice.status = InvoiceStatus.OVERDUE
+        session.add(invoice)
+        session.commit()
+        session.refresh(invoice)
     return serialize_invoice(invoice, session)
 
 
