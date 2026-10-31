@@ -87,3 +87,5 @@ main
 Once the changes are tested and integrated into `dev`, the team can create a Pull Request from `dev` to `main` when the code is ready for a stable release.
 
 ### Basic
+
+Copyright to Abhijit, Alan, Jeremy , Thomas
