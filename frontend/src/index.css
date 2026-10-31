@@ -13,9 +13,10 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
-    background-color: #FFFFFF;
-    color: #111827;
-    font-family: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #F9F9FA;
+    color: #1A1C1D;
+    font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.01em;
     overflow-x: hidden;
   }
 
@@ -30,26 +31,41 @@
   }
 }
 
+/* Mobbin Architectural Dot Grid Matrix */
+.bg-dot-grid {
+  background-image: radial-gradient(#71717A 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Mobbin Subtle Hero Radial Gradient */
+.mobbin-hero-gradient {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37, 99, 235, 0.07) 0%, rgba(249, 249, 250, 0) 70%);
+}
+
+/* Card Surface Subtle Gradient */
+.mobbin-card-gradient {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFB 100%);
+}
+
+/* Precision Dark Console Gradient */
+.mobbin-dark-gradient {
+  background: linear-gradient(180deg, #141416 0%, #0A0A0B 100%);
+}
+
+/* Card Hover Micro-Elevation */
 .floating-card {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
 .floating-card:hover {
   transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
 }
 
-.custom-scroll::-webkit-scrollbar {
-  display: none;
-}
-.custom-scroll {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Subtle, sleek scrollbar matching Mobbin */
+/* Sleek minimalist scrollbar matching Mobbin */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -63,4 +79,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #A1A1AA;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  display: none;
+}
+.custom-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

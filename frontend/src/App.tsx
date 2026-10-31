@@ -97,7 +97,19 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] text-[#111827] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F9F9FA] text-[#1A1C1D] flex flex-col font-sans relative selection:bg-black selection:text-white">
+      {/* Mobbin Architectural Dot Matrix Grid Backdrop */}
+      <div className="absolute inset-0 pointer-events-none opacity-25 [mask-image:radial-gradient(ellipse_70%_50%_at_50%_0%,#000_20%,transparent_100%)]">
+        <svg className="w-full h-full" height="100%" width="100%">
+          <defs>
+            <pattern height="24" id="app-dot-grid" patternUnits="userSpaceOnUse" width="24">
+              <circle cx="2" cy="2" fill="#71717A" opacity="0.35" r="1" />
+            </pattern>
+          </defs>
+          <rect fill="url(#app-dot-grid)" height="100%" width="100%" />
+        </svg>
+      </div>
+
       {/* Stitch Top Sticky Navbar */}
       <Navbar
         currentRole={role}
@@ -121,7 +133,7 @@ function AppContent() {
       )}
 
       {/* Main Workspace Layout */}
-      <div className="max-w-[1340px] mx-auto w-full px-4 sm:px-6 py-8 flex flex-1 gap-8">
+      <div className="max-w-[1340px] mx-auto w-full px-4 sm:px-6 py-8 flex flex-1 gap-8 relative z-10">
         {/* Sidebar rendered for Admin & Staff personas */}
         {role !== 'customer' && <Sidebar role={role} />}
 
