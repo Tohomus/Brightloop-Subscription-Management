@@ -1,24 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, CheckCircle, PauseCircle, PlayCircle, X } from 'lucide-react';
+import {
+  Plus,
+  CheckCircle,
+  PauseCircle,
+  PlayCircle,
+  X,
+  Search,
+  FileSpreadsheet,
+  TrendingUp,
+  AlertOctagon,
+  Clock,
+  Eye,
+  Trash2,
+} from 'lucide-react';
 import type { Subscription, SubscriptionStatus, Product, Plan } from '../types';
 import { api } from '../services/api';
+
+const DEFAULT_START_DATE = '2026-10-31';
+
+interface QuoteLineItem {
+  product_id: string;
+  variant_id: string;
+  quantity: number;
+}
 
 export const SubscriptionsPage: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [filter, setFilter] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const currentUser = api.getCurrentUser();
 
-  // Modal State
+  // Create Quotation Modal State
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    customer_name: '',
-    customer_email: '',
-    plan_id: '',
-    product_id: '',
-    variant_id: '',
-    quantity: 1,
-  });
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [planId, setPlanId] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('Net 15');
+  const [startDate, setStartDate] = useState(DEFAULT_START_DATE);
+  const [lineItems, setLineItems] = useState<QuoteLineItem[]>([
+    { product_id: '', variant_id: '', quantity: 1 },
+  ]);
+
+  // Inspection Drawer/Modal State
+  const [inspectSub, setInspectSub] = useState<Subscription | null>(null);
+
+  const refreshSubscriptions = async () => {
+    const subs = await api.getSubscriptions(filter);
+    setSubscriptions(subs);
+  };
 
   useEffect(() => {
     let active = true;
@@ -33,14 +64,14 @@ export const SubscriptionsPage: React.FC = () => {
         setProducts(prods);
         setPlans(pls);
         if (pls.length > 0) {
-          setForm((prev) => ({ ...prev, plan_id: prev.plan_id || pls[0].id }));
+          setPlanId((prev) => prev || pls[0].id);
         }
         if (prods.length > 0) {
-          setForm((prev) => ({
-            ...prev,
-            product_id: prev.product_id || prods[0].id,
-            variant_id: prev.variant_id || prods[0].variants[0]?.id || '',
-          }));
+          setLineItems((prev) =>
+            prev.length > 0 && prev[0].product_id === ''
+              ? [{ product_id: prods[0].id, variant_id: prods[0].variants[0]?.id || '', quantity: 1 }]
+              : prev
+          );
         }
       }
     };
@@ -52,43 +83,121 @@ export const SubscriptionsPage: React.FC = () => {
 
   const handleStatusChange = async (id: string, newStatus: SubscriptionStatus) => {
     await api.updateSubscriptionStatus(id, newStatus);
-    const updatedSubs = await api.getSubscriptions(filter);
-    setSubscriptions(updatedSubs);
+    await refreshSubscriptions();
+    if (inspectSub && inspectSub.id === id) {
+      setInspectSub((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
+  };
+
+  const handleDeleteSub = async (id: string) => {
+    if (confirm('Delete this subscription record?')) {
+      await api.deleteSubscription(id);
+      await refreshSubscriptions();
+      if (inspectSub?.id === id) setInspectSub(null);
+    }
+  };
+
+  // Dynamic Quote Lines Management
+  const addLineItem = () => {
+    if (products.length === 0) return;
+    setLineItems([
+      ...lineItems,
+      {
+        product_id: products[0].id,
+        variant_id: products[0].variants[0]?.id || '',
+        quantity: 1,
+      },
+    ]);
+  };
+
+  const updateLineItem = (index: number, field: keyof QuoteLineItem, value: string | number) => {
+    const updated = [...lineItems];
+    if (field === 'product_id') {
+      const newProd = products.find((p) => p.id === value);
+      updated[index] = {
+        ...updated[index],
+        product_id: String(value),
+        variant_id: newProd?.variants[0]?.id || '',
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setLineItems(updated);
+  };
+
+  const removeLineItem = (index: number) => {
+    if (lineItems.length <= 1) return;
+    setLineItems(lineItems.filter((_, i) => i !== index));
+  };
+
+  const calculateQuoteEstimate = () => {
+    return lineItems.reduce((acc, line) => {
+      const prod = products.find((p) => p.id === line.product_id);
+      if (!prod) return acc;
+      const variant = prod.variants.find((v) => v.id === line.variant_id);
+      const unit = prod.sales_price + (variant ? variant.price_extra : 0);
+      return acc + unit * line.quantity;
+    }, 0);
   };
 
   const handleCreateQuote = async (e: React.FormEvent) => {
     e.preventDefault();
     await api.createQuotation({
-      customer_name: form.customer_name,
-      customer_email: form.customer_email,
-      plan_id: form.plan_id,
-      lines: [
-        {
-          product_id: form.product_id,
-          variant_id: form.variant_id || undefined,
-          quantity: form.quantity,
-        },
-      ],
+      customer_name: customerName,
+      customer_email: customerEmail,
+      plan_id: planId || plans[0]?.id || '',
+      payment_terms: paymentTerms,
+      start_date: startDate,
+      lines: lineItems.map((l) => ({
+        product_id: l.product_id,
+        variant_id: l.variant_id || undefined,
+        quantity: l.quantity,
+      })),
     });
     setShowModal(false);
-    setForm({
-      customer_name: '',
-      customer_email: '',
-      plan_id: plans[0]?.id || '',
-      product_id: products[0]?.id || '',
-      variant_id: products[0]?.variants[0]?.id || '',
-      quantity: 1,
-    });
-    const updatedSubs = await api.getSubscriptions(filter);
-    setSubscriptions(updatedSubs);
+    setCustomerName('');
+    setCustomerEmail('');
+    setLineItems([
+      {
+        product_id: products[0]?.id || '',
+        variant_id: products[0]?.variants[0]?.id || '',
+        quantity: 1,
+      },
+    ]);
+    await refreshSubscriptions();
   };
 
-  const selectedProduct = products.find((p) => p.id === form.product_id);
+  // Filter & Search Logic
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    const matchesSearch =
+      sub.subscription_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sub.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sub.customer_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sub.plan_name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Metrics Rollup
+  const activeSubs = subscriptions.filter((s) => s.status === 'Active');
+  const activeMRR = activeSubs.reduce((acc, s) => {
+    if (s.frequency === 'monthly') return acc + s.recurring_amount;
+    if (s.frequency === 'yearly') return acc + s.recurring_amount / 12;
+    if (s.frequency === 'weekly') return acc + s.recurring_amount * 4.33;
+    if (s.frequency === 'daily') return acc + s.recurring_amount * 30;
+    return acc + s.recurring_amount;
+  }, 0);
+  const quotesCount = subscriptions.filter((s) => s.status === 'Quotation').length;
+  const quotesValue = subscriptions
+    .filter((s) => s.status === 'Quotation')
+    .reduce((acc, s) => acc + s.recurring_amount, 0);
+  const pausedCount = subscriptions.filter((s) => s.status === 'Paused').length;
 
   const getStatusBadge = (status: SubscriptionStatus) => {
     switch (status) {
       case 'Active':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Confirmed':
+        return 'bg-indigo-50 text-[#3B49DF] border-indigo-200';
       case 'Quotation':
         return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'Paused':
@@ -100,19 +209,19 @@ export const SubscriptionsPage: React.FC = () => {
     }
   };
 
-  const filterOptions = ['All', 'Active', 'Quotation', 'Paused', 'Closed'];
+  const filterOptions = ['All', 'Active', 'Quotation', 'Confirmed', 'Paused', 'Closed'];
 
   return (
     <div className="space-y-6">
-      {/* Header & Upflow CTA */}
+      {/* 1. HEADER & ACTIONS */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-[#0B0F19]">
-              Quotations & Subscriptions
+              {currentUser?.role === 'customer' ? 'My Subscriptions' : 'Subscriptions & Quotations'}
             </h1>
             <span className="rounded-full bg-blue-50 text-[#3B49DF] px-2.5 py-0.5 text-xs font-semibold">
-              State Machine
+              State Engine
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -120,59 +229,121 @@ export const SubscriptionsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-4 py-2 text-xs font-semibold text-white shadow-sm transition active:scale-95 cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>New Quotation</span>
-        </button>
-      </div>
-
-      {/* Upflow Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-        {filterOptions.map((opt) => (
+        {currentUser?.role !== 'customer' && (
           <button
-            key={opt}
-            onClick={() => setFilter(opt)}
-            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition cursor-pointer ${
-              filter === opt
-                ? 'bg-[#0B0F19] text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-4 py-2 text-xs font-semibold text-white shadow-sm transition active:scale-95 cursor-pointer self-start sm:self-auto"
           >
-            {opt}
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Quotation</span>
           </button>
-        ))}
+        )}
       </div>
 
-      {/* Subscriptions Table */}
+      {/* 2. UPFLOW KPI SUMMARY CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Active Subs</span>
+            <FileSpreadsheet className="h-4 w-4 text-[#3B49DF]" />
+          </div>
+          <div className="mt-1 text-2xl font-bold text-[#0B0F19] font-mono">{activeSubs.length}</div>
+          <span className="text-[10px] text-emerald-600 font-medium">Live recurring contracts</span>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Committed MRR</span>
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
+          </div>
+          <div className="mt-1 text-2xl font-bold text-emerald-600 font-mono">
+            ${Math.round(activeMRR).toLocaleString()}
+          </div>
+          <span className="text-[10px] text-slate-400 font-mono">ARR: ${(Math.round(activeMRR) * 12).toLocaleString()}</span>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Pending Quotes</span>
+            <Clock className="h-4 w-4 text-amber-600" />
+          </div>
+          <div className="mt-1 text-2xl font-bold text-amber-600 font-mono">{quotesCount}</div>
+          <span className="text-[10px] text-slate-400 font-mono">${quotesValue.toLocaleString()} in pipeline</span>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Paused / Inactive</span>
+            <AlertOctagon className="h-4 w-4 text-violet-600" />
+          </div>
+          <div className="mt-1 text-2xl font-bold text-violet-600 font-mono">{pausedCount}</div>
+          <span className="text-[10px] text-slate-400">Churn prevention review</span>
+        </div>
+      </div>
+
+      {/* 3. SEARCH & STATUS FILTER PILLS */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by SUB#, customer, or plan..."
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-1.5 text-xs text-slate-900 outline-none focus:border-[#3B49DF] focus:bg-white font-mono"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+          {filterOptions.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setFilter(opt)}
+              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition cursor-pointer ${
+                filter === opt
+                  ? 'bg-[#0B0F19] text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. SUBSCRIPTIONS TABLE */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-bold font-mono">
               <tr>
                 <th className="px-5 py-3.5">Subscription #</th>
-                <th className="px-5 py-3.5">Customer</th>
-                <th className="px-5 py-3.5">Plan & Frequency</th>
+                <th className="px-5 py-3.5">Customer & Account</th>
+                <th className="px-5 py-3.5">Plan Cadence</th>
                 <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5">Next Billing</th>
-                <th className="px-5 py-3.5">Recurring Amount</th>
+                <th className="px-5 py-3.5">Terms & Next Bill</th>
+                <th className="px-5 py-3.5">Amount</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {subscriptions.length === 0 ? (
+              {filteredSubscriptions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-8 text-center text-slate-400">
-                    No subscriptions match this filter.
+                  <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
+                    No subscriptions match this view.
                   </td>
                 </tr>
               ) : (
-                subscriptions.map((sub) => (
-                  <tr key={sub.id} className="hover:bg-slate-50/80 transition">
+                filteredSubscriptions.map((sub) => (
+                  <tr key={sub.id} className="hover:bg-slate-50/80 transition group">
                     <td className="px-5 py-3.5 font-mono font-bold text-[#0B0F19]">
-                      {sub.subscription_number}
+                      <button
+                        onClick={() => setInspectSub(sub)}
+                        className="hover:text-[#3B49DF] hover:underline cursor-pointer flex items-center gap-1.5"
+                      >
+                        <span>{sub.subscription_number}</span>
+                        <Eye className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100" />
+                      </button>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="font-semibold text-slate-900">{sub.customer_name}</div>
@@ -194,8 +365,9 @@ export const SubscriptionsPage: React.FC = () => {
                         {sub.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-slate-600">
-                      {sub.next_billing_date}
+                    <td className="px-5 py-3.5 font-mono text-[11px]">
+                      <div className="text-slate-800 font-medium">{sub.next_billing_date}</div>
+                      <div className="text-slate-400 text-[10px]">{sub.payment_terms}</div>
                     </td>
                     <td className="px-5 py-3.5 font-mono font-bold text-[#0B0F19]">
                       ${sub.recurring_amount.toLocaleString()}
@@ -208,6 +380,15 @@ export const SubscriptionsPage: React.FC = () => {
                         >
                           <CheckCircle className="h-3 w-3" />
                           <span>Confirm</span>
+                        </button>
+                      )}
+                      {sub.status === 'Confirmed' && (
+                        <button
+                          onClick={() => handleStatusChange(sub.id, 'Active')}
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-3 py-1 text-[11px] font-semibold transition active:scale-95 cursor-pointer"
+                        >
+                          <PlayCircle className="h-3 w-3" />
+                          <span>Activate</span>
                         </button>
                       )}
                       {sub.status === 'Active' && (
@@ -228,6 +409,12 @@ export const SubscriptionsPage: React.FC = () => {
                           <span>Resume</span>
                         </button>
                       )}
+                      <button
+                        onClick={() => setInspectSub(sub)}
+                        className="rounded-full bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition cursor-pointer"
+                      >
+                        Inspect
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -237,15 +424,18 @@ export const SubscriptionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL: CREATE QUOTATION */}
+      {/* 5. MODAL: CREATE MULTI-LINE QUOTATION */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="rounded-3xl bg-white p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-100 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="rounded-3xl bg-white p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-100 animate-fade-in my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-lg font-bold text-[#0B0F19]">Draft New Quotation</h2>
+              <div>
+                <h2 className="text-lg font-bold text-[#0B0F19]">Draft New Quotation</h2>
+                <p className="text-xs text-slate-500">Configure customer header and dynamic line items.</p>
+              </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -254,118 +444,316 @@ export const SubscriptionsPage: React.FC = () => {
             <form onSubmit={handleCreateQuote} className="mt-4 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Customer Name</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Customer Account Name</label>
                   <input
                     required
                     type="text"
-                    value={form.customer_name}
-                    onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                    placeholder="e.g. Zenith Global"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="e.g. Zenith Global Ltd"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF] focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Customer Email</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Billing Email</label>
                   <input
                     required
                     type="email"
-                    value={form.customer_email}
-                    onChange={(e) => setForm({ ...form, customer_email: e.target.value })}
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="billing@zenith.com"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF] focus:bg-white"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Select Billing Plan</label>
-                <select
-                  value={form.plan_id}
-                  onChange={(e) => setForm({ ...form, plan_id: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
-                >
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.frequency})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Plan Cadence</label>
+                  <select
+                    value={planId}
+                    onChange={(e) => setPlanId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                  >
+                    {plans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.frequency})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Payment Terms</label>
+                  <select
+                    value={paymentTerms}
+                    onChange={(e) => setPaymentTerms(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                  >
+                    <option value="Immediate">Immediate</option>
+                    <option value="Net 15">Net 15 Days</option>
+                    <option value="Net 30">Net 30 Days</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Start Date</label>
+                  <input
+                    required
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-[#3B49DF]"
+                  />
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3">
-                <span className="font-semibold text-slate-800 text-xs">Product Line Item</span>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2">
-                    <label className="block text-[11px] text-slate-500 mb-1">Product</label>
-                    <select
-                      value={form.product_id}
-                      onChange={(e) => {
-                        const p = products.find((prod) => prod.id === e.target.value);
-                        setForm({
-                          ...form,
-                          product_id: e.target.value,
-                          variant_id: p?.variants[0]?.id || '',
-                        });
-                      }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900"
-                    >
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} (${p.sales_price})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">Quantity</label>
-                    <input
-                      required
-                      type="number"
-                      min={1}
-                      value={form.quantity}
-                      onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900"
-                    />
-                  </div>
+              {/* Dynamic Multiple Lines Manager */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 text-xs">Quotation Line Items</span>
+                  <button
+                    type="button"
+                    onClick={addLineItem}
+                    className="rounded-full bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-semibold text-[#3B49DF] transition cursor-pointer"
+                  >
+                    + Add Line Item
+                  </button>
                 </div>
 
-                {selectedProduct && selectedProduct.variants.length > 0 && (
-                  <div>
-                    <label className="block text-[11px] text-slate-500 mb-1">Variant Modifier</label>
-                    <select
-                      value={form.variant_id}
-                      onChange={(e) => setForm({ ...form, variant_id: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900"
-                    >
-                      <option value="">None (Standard Base)</option>
-                      {selectedProduct.variants.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.attribute_name}: {v.attribute_value} (+${v.price_extra})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {lineItems.map((line, idx) => {
+                    const currentProd = products.find((p) => p.id === line.product_id);
+                    return (
+                      <div key={idx} className="rounded-xl bg-white border border-slate-200 p-3 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                          <span>Line #{idx + 1}</span>
+                          {lineItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeLineItem(idx)}
+                              className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="col-span-2">
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Product</label>
+                            <select
+                              value={line.product_id}
+                              onChange={(e) => updateLineItem(idx, 'product_id', e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900"
+                            >
+                              {products.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name} (${p.sales_price})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Quantity</label>
+                            <input
+                              required
+                              type="number"
+                              min={1}
+                              value={line.quantity}
+                              onChange={(e) => updateLineItem(idx, 'quantity', Number(e.target.value))}
+                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono text-slate-900"
+                            />
+                          </div>
+                        </div>
+
+                        {currentProd && currentProd.variants.length > 0 && (
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Variant Extra Modifier</label>
+                            <select
+                              value={line.variant_id}
+                              onChange={(e) => updateLineItem(idx, 'variant_id', e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900"
+                            >
+                              <option value="">Standard Base (No extra)</option>
+                              {currentProd.variants.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                  {v.attribute_name}: {v.attribute_value} (+${v.price_extra})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Live Estimate Footer */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 font-mono text-xs">
+                  <span className="font-sans font-semibold text-slate-700">Estimated Total Amount:</span>
+                  <span className="text-base font-bold text-[#3B49DF]">
+                    ${calculateQuoteEstimate().toLocaleString()}
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="rounded-full px-4 py-2 font-medium text-slate-600 hover:bg-slate-100"
+                  className="rounded-full px-4 py-2 font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-5 py-2 font-semibold text-white shadow-sm"
+                  className="rounded-full bg-[#3B49DF] hover:bg-[#313DE0] px-5 py-2 font-semibold text-white shadow-sm cursor-pointer"
                 >
                   Create Quotation
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. MODAL: SUBSCRIPTION DETAILS & AUDIT INSPECTOR */}
+      {inspectSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="rounded-3xl bg-white p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-100 animate-fade-in my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  Subscription Inspection Drawer
+                </span>
+                <h2 className="text-xl font-bold font-mono text-[#0B0F19] mt-0.5">
+                  {inspectSub.subscription_number}
+                </h2>
+              </div>
+              <button
+                onClick={() => setInspectSub(null)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4 text-xs">
+              {/* Customer & Status Header */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Customer Account:</span>
+                  <span className="font-bold text-[#0B0F19]">{inspectSub.customer_name}</span>
+                </div>
+                <div className="flex items-center justify-between font-mono text-[11px]">
+                  <span className="text-slate-500 font-sans">Corporate Email:</span>
+                  <span className="text-slate-700">{inspectSub.customer_email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Current Status:</span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${getStatusBadge(
+                      inspectSub.status
+                    )}`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
+                    {inspectSub.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Schedule & Billing Dates */}
+              <div className="grid grid-cols-2 gap-3 text-slate-600 font-mono text-[11px]">
+                <div className="rounded-xl border border-slate-100 bg-white p-3 space-y-1">
+                  <span className="text-[10px] font-sans text-slate-400 uppercase font-semibold">Plan Cadence</span>
+                  <div className="font-bold text-slate-900">{inspectSub.plan_name}</div>
+                  <div className="text-[10px] text-slate-400 uppercase">{inspectSub.frequency}</div>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-white p-3 space-y-1">
+                  <span className="text-[10px] font-sans text-slate-400 uppercase font-semibold">Payment Terms</span>
+                  <div className="font-bold text-slate-900">{inspectSub.payment_terms}</div>
+                  <div className="text-[10px] text-slate-400">Next: {inspectSub.next_billing_date}</div>
+                </div>
+              </div>
+
+              {/* Line Items Breakdown */}
+              <div className="space-y-2">
+                <span className="font-bold text-slate-800 text-xs">Contract Line Items</span>
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase font-mono font-bold">
+                      <tr>
+                        <th className="px-3 py-2">Item</th>
+                        <th className="px-3 py-2 text-right">Qty</th>
+                        <th className="px-3 py-2 text-right">Unit Price</th>
+                        <th className="px-3 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {inspectSub.lines.map((l, i) => (
+                        <tr key={i} className="font-mono text-[11px]">
+                          <td className="px-3 py-2 font-sans font-medium text-slate-800">{l.product_name}</td>
+                          <td className="px-3 py-2 text-right text-slate-600">{l.quantity}</td>
+                          <td className="px-3 py-2 text-right text-slate-600">${l.unit_price}</td>
+                          <td className="px-3 py-2 text-right font-bold text-slate-900">${l.line_amount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-slate-50 font-mono font-bold text-slate-900 border-t border-slate-200">
+                      <tr>
+                        <td colSpan={3} className="px-3 py-2 text-right font-sans">Recurring Amount:</td>
+                        <td className="px-3 py-2 text-right text-[#3B49DF]">${inspectSub.recurring_amount}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* State Machine Transition Bar */}
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <span className="text-[11px] font-semibold text-slate-600">Quick Lifecycle Transition</span>
+                <div className="flex items-center gap-2">
+                  {inspectSub.status === 'Quotation' && (
+                    <button
+                      onClick={() => handleStatusChange(inspectSub.id, 'Active')}
+                      className="flex-1 rounded-full bg-[#3B49DF] hover:bg-[#313DE0] py-2 text-xs font-semibold text-white transition cursor-pointer"
+                    >
+                      Confirm to Active
+                    </button>
+                  )}
+                  {inspectSub.status === 'Active' && (
+                    <button
+                      onClick={() => handleStatusChange(inspectSub.id, 'Paused')}
+                      className="flex-1 rounded-full bg-violet-600 hover:bg-violet-700 py-2 text-xs font-semibold text-white transition cursor-pointer"
+                    >
+                      Pause Subscription
+                    </button>
+                  )}
+                  {inspectSub.status === 'Paused' && (
+                    <button
+                      onClick={() => handleStatusChange(inspectSub.id, 'Active')}
+                      className="flex-1 rounded-full bg-emerald-600 hover:bg-emerald-700 py-2 text-xs font-semibold text-white transition cursor-pointer"
+                    >
+                      Resume to Active
+                    </button>
+                  )}
+                  {inspectSub.status !== 'Closed' && (
+                    <button
+                      onClick={() => handleStatusChange(inspectSub.id, 'Closed')}
+                      className="rounded-full bg-slate-100 hover:bg-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition cursor-pointer"
+                    >
+                      Close Contract
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteSub(inspectSub.id)}
+                    className="rounded-full p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    title="Delete Record"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

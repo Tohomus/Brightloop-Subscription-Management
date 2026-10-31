@@ -651,6 +651,8 @@ export const api = {
     customer_name: string;
     customer_email: string;
     plan_id: string;
+    payment_terms?: string;
+    start_date?: string;
     lines: Array<{ product_id: string; variant_id?: string; quantity: number }>;
   }): Promise<Subscription> {
     try {
@@ -674,6 +676,7 @@ export const api = {
         };
       });
       const recurringAmount = lines.reduce((acc, line) => acc + line.line_amount, 0);
+      const startDate = data.start_date || '2026-10-31';
 
       const newSub: Subscription = {
         id: `sub-${Date.now()}`,
@@ -685,15 +688,23 @@ export const api = {
         plan_name: selectedPlan.name,
         frequency: selectedPlan.frequency,
         status: 'Quotation',
-        start_date: new Date().toISOString().slice(0, 10),
-        expiry_date: new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
-        next_billing_date: new Date().toISOString().slice(0, 10),
-        payment_terms: 'Net 15',
+        start_date: startDate,
+        expiry_date: '2027-10-31',
+        next_billing_date: startDate,
+        payment_terms: data.payment_terms || 'Net 15',
         recurring_amount: recurringAmount,
         lines,
       };
       subscriptionsStore = [newSub, ...subscriptionsStore];
       return newSub;
+    }
+  },
+
+  async deleteSubscription(id: string): Promise<void> {
+    try {
+      await request<void>(`/subscriptions/${id}`, { method: 'DELETE' });
+    } catch {
+      subscriptionsStore = subscriptionsStore.filter((s) => s.id !== id);
     }
   },
 
