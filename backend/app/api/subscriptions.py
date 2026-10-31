@@ -289,12 +289,11 @@ def create_quotation(payload: QuotationCreateInput, session: Session = Depends(g
         user = session.exec(select(User).where(User.email == payload.customer_email)).first()
         if user is None:
             # Create on-the-fly customer record
-            from app.core.security import get_password_hash
+            from app.core.security import hash_password
             user = User(
                 email=payload.customer_email,
-                hashed_password=get_password_hash("Brightloop@2026!"),
+                password_hash=hash_password("Brightloop@2026!"),
                 role=UserRole.CUSTOMER,
-                is_active=True,
             )
             session.add(user)
             session.flush()
