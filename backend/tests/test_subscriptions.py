@@ -189,3 +189,24 @@ def test_quotation_creation_rejects_invalid_ids(client: TestClient):
     assert resp_bad_prod.status_code == 404
     assert "Product with ID" in resp_bad_prod.json()["detail"]
 
+
+def test_delete_subscription_with_invoices_returns_409(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "start_date": "2026-10-01", "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 2, "unit_price": 600.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    # Generate an invoice via billing run
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    invs = client.get(f"/api/invoices?customer_id={user_id}").json()
+    assert len(invs) >= 1
+
+    # Attempting to delete must return 409 Conflict instead of 500 IntegrityError
+    del_res = client.delete(f"/api/subscriptions/{sub['id']}")
+    assert del_res.status_code == 409
+    assert "Cannot delete subscription with existing billing history" in del_res.json()["detail"]
+
+

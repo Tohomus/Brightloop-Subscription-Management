@@ -240,6 +240,15 @@ def delete_subscription(subscription_id: int, session: Session = Depends(get_ses
     subscription = session.get(Subscription, subscription_id)
     if subscription is None:
         raise HTTPException(status_code=404, detail="Subscription not found")
+
+    from app.models.invoicing import Invoice
+    has_invoices = session.exec(select(Invoice.id).where(Invoice.subscription_id == subscription_id)).first()
+    if has_invoices is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete subscription with existing billing history or invoices. Close the subscription instead."
+        )
+
     session.delete(subscription)
     session.commit()
     return None
