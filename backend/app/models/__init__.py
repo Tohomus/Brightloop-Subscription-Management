@@ -10,6 +10,7 @@ from .catalog import (
     BillingFrequency,
     QuotationTemplate,
     QuotationTemplateRead,
+    QuotationTemplateLine,
 )
 from .billing import (
     SystemClock,
@@ -46,6 +47,7 @@ __all__ = [
     "BillingFrequency",
     "QuotationTemplate",
     "QuotationTemplateRead",
+    "QuotationTemplateLine",
     "Subscription",
     "SubscriptionLine",
     "SubscriptionStatus",

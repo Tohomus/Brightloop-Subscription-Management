@@ -235,6 +235,7 @@ def seed_database():
             start_date=date(2026, 10, 1),
             expiry_date=date(2027, 10, 1),
             next_billing_date=date(2026, 11, 1),
+            billing_anchor_day=1,
             lines=[
                 SubscriptionLine(
                     product_id=prod_erp.id,
@@ -262,6 +263,7 @@ def seed_database():
             start_date=date(2026, 6, 15),
             expiry_date=date(2027, 6, 14),
             next_billing_date=date(2027, 6, 15),
+            billing_anchor_day=15,
             lines=[
                 SubscriptionLine(
                     product_id=prod_erp.id,
@@ -283,6 +285,7 @@ def seed_database():
             start_date=date(2026, 10, 15),
             expiry_date=date(2027, 1, 15),
             next_billing_date=date(2026, 11, 5),
+            billing_anchor_day=5,
             lines=[
                 SubscriptionLine(
                     product_id=prod_copilot.id,
@@ -300,6 +303,7 @@ def seed_database():
             status=SubscriptionStatus.QUOTATION,
             start_date=date(2026, 11, 1),
             next_billing_date=date(2026, 11, 1),
+            billing_anchor_day=1,
             lines=[
                 SubscriptionLine(
                     product_id=prod_erp.id,
@@ -323,6 +327,7 @@ def seed_database():
             status=SubscriptionStatus.CONFIRMED,
             start_date=date(2026, 11, 1),
             next_billing_date=date(2026, 11, 1),
+            billing_anchor_day=1,
             lines=[
                 SubscriptionLine(
                     product_id=prod_sla.id,
@@ -341,6 +346,7 @@ def seed_database():
             start_date=date(2026, 1, 1),
             expiry_date=date(2026, 6, 1),
             next_billing_date=date(2026, 6, 1),
+            billing_anchor_day=1,
             lines=[
                 SubscriptionLine(
                     product_id=prod_copilot.id,

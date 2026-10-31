@@ -8,7 +8,7 @@ from app.models.invoicing import Invoice, InvoiceDiscountUse, InvoiceLine, Invoi
 from app.services.tax_discount_calc import calculate_lines
 
 
-def _advance(value: date, frequency: BillingFrequency) -> date:
+def _advance(value: date, frequency: BillingFrequency, anchor_day: int | None = None) -> date:
     if frequency == BillingFrequency.DAILY:
         return value + timedelta(days=1)
     if frequency == BillingFrequency.WEEKLY:
@@ -17,9 +17,10 @@ def _advance(value: date, frequency: BillingFrequency) -> date:
         month_index = value.year * 12 + value.month
         year, month = divmod(month_index, 12)
         month += 1
-        return value.replace(year=year, month=month, day=min(value.day, calendar.monthrange(year, month)[1]))
+        return value.replace(year=year, month=month, day=min(anchor_day or value.day, calendar.monthrange(year, month)[1]))
     if frequency == BillingFrequency.YEARLY:
-        return value.replace(year=value.year + 1, day=min(value.day, calendar.monthrange(value.year + 1, value.month)[1]))
+        year = value.year + 1
+        return value.replace(year=year, day=min(anchor_day or value.day, calendar.monthrange(year, value.month)[1]))
     raise ValueError(f"Unsupported billing frequency: {frequency}")
 
 
@@ -40,9 +41,13 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
             skipped += 1
             continue
 
+        anchor_day = subscription.billing_anchor_day
         while subscription.next_billing_date <= simulated_date:
-            cycle_start = subscription.next_billing_date
-            cycle_end = _advance(cycle_start, plan.frequency) - timedelta(days=1)
+            cycle_start = max(subscription.next_billing_date, subscription.start_date, plan.start_date)
+            if cycle_start > simulated_date:
+                subscription.next_billing_date = cycle_start
+                break
+            cycle_end = _advance(cycle_start, plan.frequency, anchor_day) - timedelta(days=1)
             if plan.end_date is not None and cycle_start > plan.end_date:
                 if plan.auto_close_on_end:
                     subscription.status = SubscriptionStatus.CLOSED
@@ -56,7 +61,7 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
 
             key = f"{subscription.id}_{cycle_start.isoformat()}"
             existing = session.exec(select(Invoice.id).where(Invoice.idempotency_key == key)).first()
-            next_billing_date = _advance(cycle_start, plan.frequency)
+            next_billing_date = _advance(cycle_start, plan.frequency, anchor_day)
             if existing is not None:
                 skipped += 1
                 subscription.next_billing_date = next_billing_date
@@ -94,10 +99,6 @@ def run_billing(session: Session, simulated_date: date) -> dict[str, int]:
             invoice.invoice_number = f"INV-{simulated_date.year}-{invoice.id:04d}"
             for rule_id in discount_rule_ids:
                 session.add(InvoiceDiscountUse(invoice_id=invoice.id, discount_rule_id=rule_id))
-                rule = session.get(DiscountRule, rule_id)
-                if rule is not None:
-                    rule.uses += 1
-                    session.add(rule)
             subscription.next_billing_date = next_billing_date
             generated += 1
 

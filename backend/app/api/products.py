@@ -2,6 +2,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 from app.core.database import get_session
+from app.api.auth import require_roles
+from app.models.auth import UserRole
 from app.models.catalog import Product, ProductVariant, ProductType
 from app.schemas.catalog import (
     ProductCreate,
@@ -15,7 +17,7 @@ router = APIRouter(prefix="/api/products", tags=["Products & Variants"])
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(payload: ProductCreate, session: Session = Depends(get_session)):
+def create_product(payload: ProductCreate, session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN))):
     """
     Creates a new product with optional initial variants.
     Example: Product 'Cloud ERP' with variant 'Brand: Odoo' (price_extra: +560.0).
@@ -53,6 +55,7 @@ def list_products(
     product_type: Optional[ProductType] = Query(None, description="Filter by product type"),
     include_inactive: bool = Query(False, description="Include deactivated products"),
     session: Session = Depends(get_session),
+    _user=Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
 ):
     """
     Returns all products with their associated variants.
@@ -68,7 +71,11 @@ def list_products(
 
 
 @router.get("/{id}", response_model=ProductResponse)
-def get_product(id: int, session: Session = Depends(get_session)):
+def get_product(
+    id: int,
+    session: Session = Depends(get_session),
+    _user=Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+):
     """
     Retrieves a single product by ID including all variants.
     """
@@ -82,7 +89,7 @@ def get_product(id: int, session: Session = Depends(get_session)):
 
 
 @router.patch("/{id}", response_model=ProductResponse)
-def update_product(id: int, payload: ProductUpdate, session: Session = Depends(get_session)):
+def update_product(id: int, payload: ProductUpdate, session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN))):
     """
     Updates product details (name, prices, notes, status).
     """
@@ -104,7 +111,7 @@ def update_product(id: int, payload: ProductUpdate, session: Session = Depends(g
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
-def deactivate_product(id: int, session: Session = Depends(get_session)):
+def deactivate_product(id: int, session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN))):
     """
     Soft-deactivates a product so active subscriptions are not corrupted.
     """
@@ -126,6 +133,7 @@ def add_product_variant(
     id: int,
     payload: ProductVariantCreate,
     session: Session = Depends(get_session),
+    _user=Depends(require_roles(UserRole.ADMIN)),
 ):
     """
     Adds a dynamic pricing variant to an existing product.
@@ -151,7 +159,7 @@ def add_product_variant(
 
 
 @router.delete("/{id}/variants/{variant_id}", status_code=status.HTTP_200_OK)
-def delete_product_variant(id: int, variant_id: int, session: Session = Depends(get_session)):
+def delete_product_variant(id: int, variant_id: int, session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN))):
     """
     Removes a variant option from a product.
     """

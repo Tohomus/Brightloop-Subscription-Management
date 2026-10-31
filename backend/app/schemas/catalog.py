@@ -86,10 +86,22 @@ class PlanResponse(BaseModel):
 
 
 # --- Quotation Template Schemas ---
+class QuotationTemplateLineCreate(BaseModel):
+    product_id: int
+    variant_id: Optional[int] = None
+    quantity: int = Field(default=1, ge=1)
+    unit_price: Optional[float] = Field(default=None, ge=0)
+
+
+class QuotationTemplateLineResponse(QuotationTemplateLineCreate):
+    id: int
+
+
 class QuotationTemplateCreate(BaseModel):
     name: str = Field(min_length=1, description="Template name, e.g. 'Enterprise Odoo Deal'")
     plan_id: int
     valid_days: int = Field(default=14, ge=1, description="Number of days the quote remains valid")
+    lines: List[QuotationTemplateLineCreate] = Field(default_factory=list)
 
 
 class QuotationTemplateResponse(BaseModel):
@@ -97,6 +109,7 @@ class QuotationTemplateResponse(BaseModel):
     name: str
     plan_id: int
     valid_days: int
+    lines: List[QuotationTemplateLineResponse] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

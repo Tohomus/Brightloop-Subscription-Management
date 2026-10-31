@@ -2,7 +2,9 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 from app.core.database import get_session
-from app.models.catalog import Plan, BillingFrequency, QuotationTemplate
+from app.api.auth import require_roles
+from app.models.auth import UserRole
+from app.models.catalog import Plan, BillingFrequency, Product, ProductVariant, QuotationTemplate, QuotationTemplateLine
 from app.schemas.catalog import (
     PlanCreate,
     PlanResponse,
@@ -14,7 +16,7 @@ router = APIRouter(prefix="/api/plans", tags=["Plans & Frequencies"])
 
 
 @router.post("", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
-def create_plan(payload: PlanCreate, session: Session = Depends(get_session)):
+def create_plan(payload: PlanCreate, session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN))):
     """
     Creates a new billing plan.
     Configures:
@@ -72,21 +74,22 @@ def get_plan(id: int, session: Session = Depends(get_session)):
     Retrieves a single plan by ID.
     """
     plan = session.get(Plan, id)
-    if not plan:
+    if not plan or not plan.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plan with ID {id} not found."
         )
+
     return plan
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK)
-def deactivate_plan(id: int, session: Session = Depends(get_session)):
+def deactivate_plan(id: int, session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN))):
     """
     Soft-deactivates a plan.
     """
     plan = session.get(Plan, id)
-    if not plan:
+    if not plan or not plan.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plan with ID {id} not found."
@@ -102,22 +105,35 @@ def deactivate_plan(id: int, session: Session = Depends(get_session)):
 def create_quotation_template(
     payload: QuotationTemplateCreate,
     session: Session = Depends(get_session),
+    _user=Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
 ):
     """
     Creates a pre-configured quotation template linked to a plan.
     Enables sales reps to draft offers quickly with pre-defined validity days.
     """
     plan = session.get(Plan, payload.plan_id)
-    if not plan:
+    if not plan or not plan.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plan with ID {payload.plan_id} does not exist."
         )
 
+    lines = []
+    for line in payload.lines:
+        product = session.get(Product, line.product_id)
+        if product is None or not product.is_active:
+            raise HTTPException(status_code=404, detail=f"Active product {line.product_id} not found")
+        if line.variant_id is not None:
+            variant = session.get(ProductVariant, line.variant_id)
+            if variant is None or variant.product_id != line.product_id:
+                raise HTTPException(status_code=422, detail="Variant does not belong to the selected product")
+        lines.append(QuotationTemplateLine(**line.model_dump()))
+
     template = QuotationTemplate(
         name=payload.name,
         plan_id=payload.plan_id,
         valid_days=payload.valid_days,
+        lines=lines,
     )
     session.add(template)
     session.commit()
@@ -126,7 +142,7 @@ def create_quotation_template(
 
 
 @router.get("/templates/all", response_model=List[QuotationTemplateResponse])
-def list_quotation_templates(session: Session = Depends(get_session)):
+def list_quotation_templates(session: Session = Depends(get_session), _user=Depends(require_roles(UserRole.ADMIN, UserRole.STAFF))):
     """
     Lists all available quotation templates.
     """

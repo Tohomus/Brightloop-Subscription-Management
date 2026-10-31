@@ -1,6 +1,7 @@
 from datetime import date, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlmodel import Session, select, func
 from decimal import Decimal
 
@@ -9,58 +10,48 @@ from app.models.billing import Subscription, SubscriptionStatus, SubscriptionLin
 from app.models.catalog import Plan, BillingFrequency
 from app.models.invoicing import Invoice, InvoiceStatus, Payment
 from app.services.billing_runner import run_billing
+from app.api.auth import require_roles
+from app.models.auth import UserRole
 
 
 router = APIRouter(prefix="/api", tags=["dashboard", "simulation"])
 
 
-# Fallback tracker with database persistence
-_system_simulated_date: date = date.today()
+class TimeTravelRequest(BaseModel):
+    advance_days: Literal[1, 7, 30] = 1
 
 
 def get_current_simulated_date(session: Optional[Session] = None) -> date:
-    global _system_simulated_date
-    try:
-        if session is not None:
-            clock = session.get(SystemClock, 1)
-            if clock:
-                return clock.simulated_date
-        else:
-            with Session(engine) as s:
-                clock = s.get(SystemClock, 1)
-                if clock:
-                    return clock.simulated_date
-    except Exception:
-        pass
-    return _system_simulated_date
+    if session is not None:
+        clock = session.get(SystemClock, 1)
+        return clock.simulated_date if clock else date.today()
+    with Session(engine) as db_session:
+        clock = db_session.get(SystemClock, 1)
+        return clock.simulated_date if clock else date.today()
 
 
 def set_current_simulated_date(new_date: date, session: Optional[Session] = None) -> date:
-    global _system_simulated_date
-    _system_simulated_date = new_date
-    try:
-        def _persist(s: Session):
-            clock = s.get(SystemClock, 1)
-            if not clock:
-                clock = SystemClock(id=1, simulated_date=new_date)
-            else:
-                clock.simulated_date = new_date
-            s.add(clock)
-            s.commit()
-            return clock.simulated_date
-
-        if session is not None:
-            return _persist(session)
+    def persist(db_session: Session) -> date:
+        clock = db_session.get(SystemClock, 1)
+        if clock is None:
+            clock = SystemClock(id=1, simulated_date=new_date)
         else:
-            with Session(engine) as s:
-                return _persist(s)
-    except Exception:
-        pass
-    return _system_simulated_date
+            clock.simulated_date = new_date
+        db_session.add(clock)
+        db_session.commit()
+        return clock.simulated_date
+
+    if session is not None:
+        return persist(session)
+    with Session(engine) as db_session:
+        return persist(db_session)
 
 
 @router.get("/dashboard/summary")
-def get_dashboard_summary(session: Session = Depends(get_session)) -> Dict[str, Any]:
+def get_dashboard_summary(
+    session: Session = Depends(get_session),
+    _user=Depends(require_roles(UserRole.ADMIN, UserRole.STAFF)),
+) -> Dict[str, Any]:
     """
     Executive Finance Dashboard Aggregation (< 2s SLA).
     Computes real metrics from SQLite tables:
@@ -74,43 +65,33 @@ def get_dashboard_summary(session: Session = Depends(get_session)) -> Dict[str, 
     sim_date = get_current_simulated_date(session)
 
     # 1. Active Subscriptions Count & MRR Calculation
-    active_subs = session.exec(
-        select(Subscription).where(Subscription.status == SubscriptionStatus.ACTIVE)
-    ).all()
-    active_subscriptions_count = len(active_subs)
+    active_subscriptions_count = session.exec(
+        select(func.count()).select_from(Subscription).where(Subscription.status == SubscriptionStatus.ACTIVE)
+    ).one()
 
     total_mrr = Decimal("0.00")
-    for sub in active_subs:
-        plan = session.get(Plan, sub.plan_id)
-        # Sum lines for this subscription
-        lines = session.exec(
-            select(SubscriptionLine).where(SubscriptionLine.subscription_id == sub.id)
-        ).all()
-        sub_cycle_amount = sum(
-            (Decimal(str(line.unit_price)) * Decimal(str(line.quantity)) for line in lines),
-            Decimal("0.00")
-        )
-
-        # Normalize to monthly
-        if plan:
-            if plan.frequency == BillingFrequency.DAILY:
-                sub_mrr = sub_cycle_amount * Decimal("30")
-            elif plan.frequency == BillingFrequency.WEEKLY:
-                sub_mrr = (sub_cycle_amount * Decimal("52")) / Decimal("12")
-            elif plan.frequency == BillingFrequency.YEARLY:
-                sub_mrr = sub_cycle_amount / Decimal("12")
-            else:  # MONTHLY
-                sub_mrr = sub_cycle_amount
+    plan_totals = session.exec(
+        select(Subscription.plan_id, func.sum(SubscriptionLine.unit_price * SubscriptionLine.quantity))
+        .join(SubscriptionLine, SubscriptionLine.subscription_id == Subscription.id)
+        .where(Subscription.status == SubscriptionStatus.ACTIVE)
+        .group_by(Subscription.plan_id)
+    ).all()
+    for plan_id, amount in plan_totals:
+        plan = session.get(Plan, plan_id)
+        cycle_amount = Decimal(str(amount or 0))
+        if plan and plan.frequency == BillingFrequency.DAILY:
+            total_mrr += cycle_amount * Decimal("30")
+        elif plan and plan.frequency == BillingFrequency.WEEKLY:
+            total_mrr += cycle_amount * Decimal("52") / Decimal("12")
+        elif plan and plan.frequency == BillingFrequency.YEARLY:
+            total_mrr += cycle_amount / Decimal("12")
         else:
-            sub_mrr = sub_cycle_amount
-
-        total_mrr += sub_mrr
+            total_mrr += cycle_amount
 
     total_arr = total_mrr * Decimal("12")
 
     # 2. Total Collected Revenue from Payments
-    payments = session.exec(select(Payment.amount)).all()
-    total_revenue_collected = sum((Decimal(str(amt)) for amt in payments), Decimal("0.00"))
+    total_revenue_collected = Decimal(str(session.exec(select(func.coalesce(func.sum(Payment.amount), 0))).one()))
 
     # 3. Invoices Status & Receivables Reconciliation
     # First update expired invoices based on current simulated date
@@ -143,12 +124,11 @@ def get_dashboard_summary(session: Session = Depends(get_session)) -> Dict[str, 
     aging_31_60 = Decimal("0.00")
     aging_60_plus = Decimal("0.00")
 
+    payments_by_invoice = dict(session.exec(
+        select(Payment.invoice_id, func.sum(Payment.amount)).group_by(Payment.invoice_id)
+    ).all())
     for inv in billable_invoices:
-        # Calculate amount paid on this invoice
-        inv_payments = session.exec(
-            select(Payment.amount).where(Payment.invoice_id == inv.id)
-        ).all()
-        paid_for_inv = sum((Decimal(str(p)) for p in inv_payments), Decimal("0.00"))
+        paid_for_inv = Decimal(str(payments_by_invoice.get(inv.id, 0) or 0))
         inv_total = Decimal(str(inv.total))
         balance = max(Decimal("0.00"), inv_total - paid_for_inv)
 
@@ -183,24 +163,18 @@ def get_dashboard_summary(session: Session = Depends(get_session)) -> Dict[str, 
 
 @router.post("/simulation/time-travel")
 def time_travel(
-    payload: Dict[str, Any],
-    session: Session = Depends(get_session)
+    payload: TimeTravelRequest,
+    session: Session = Depends(get_session),
+    _user=Depends(require_roles(UserRole.ADMIN)),
 ) -> Dict[str, Any]:
     """
     Hackathon Edge Chrono-Simulator:
     Advances the simulated system clock, automatically executes the billing engine,
     re-evaluates invoice overdue aging, and returns updated metrics in real-time.
     """
-    advance_days = int(payload.get("advance_days", 1))
-    explicit_date = payload.get("simulated_date")
-
-    if explicit_date:
-        target_date = date.fromisoformat(explicit_date)
-    else:
-        current_date = get_current_simulated_date(session)
-        target_date = current_date + timedelta(days=advance_days)
-
-    set_current_simulated_date(target_date, session)
+    advance_days = payload.advance_days
+    current_date = get_current_simulated_date(session)
+    target_date = current_date + timedelta(days=advance_days)
 
     # 1. Run billing runner up to target date
     billing_result = run_billing(session, target_date)
@@ -215,6 +189,8 @@ def time_travel(
         inv.status = InvoiceStatus.OVERDUE
         session.add(inv)
     session.commit()
+
+    set_current_simulated_date(target_date, session)
 
     # 3. Retrieve updated summary
     summary = get_dashboard_summary(session)

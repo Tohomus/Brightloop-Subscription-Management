@@ -34,7 +34,7 @@ def get_current_user(
         )
     payload = decode_access_token(token)
     user_id = payload.get("sub")
-    if not user_id:
+    if not isinstance(user_id, str) or not user_id.isdecimal() or payload.get("token_type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload."
@@ -42,13 +42,21 @@ def get_current_user(
     user = session.get(User, int(user_id))
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found."
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token."
         )
     return user
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def require_roles(*roles: UserRole):
+    def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        return current_user
+    return dependency
+
+
+@router.post("/register", status_code=status.HTTP_202_ACCEPTED)
 def register(payload: UserRegister, session: Session = Depends(get_session)):
     """
     Registers a new user account.
@@ -63,22 +71,18 @@ def register(payload: UserRegister, session: Session = Depends(get_session)):
     statement = select(User).where(User.email == payload.email)
     existing_user = session.exec(statement).first()
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="An account with this email already exists."
-        )
+        return {"message": "Registration request received."}
 
     # 3. Hash password and persist
     hashed_pwd = hash_password(payload.password)
     user = User(
         email=payload.email,
         password_hash=hashed_pwd,
-        role=payload.role or UserRole.CUSTOMER
+        role=UserRole.CUSTOMER
     )
     session.add(user)
     session.commit()
-    session.refresh(user)
-    return user
+    return {"message": "Registration request received."}
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -111,25 +115,12 @@ def login(payload: UserLogin, session: Session = Depends(get_session)):
 
 
 @router.post("/reset-password")
-def request_password_reset(payload: PasswordResetRequest, session: Session = Depends(get_session)):
+def request_password_reset(payload: PasswordResetRequest):
     """
     Simulates sending a password reset link to the registered email.
     """
-    statement = select(User).where(User.email == payload.email)
-    user = session.exec(statement).first()
-
-    if not user:
-        # Avoid user enumeration in production; return success message regardless
-        return {"message": f"If an account exists for {payload.email}, a reset link has been dispatched."}
-
-    # Generate temporary mock reset token
-    reset_token = create_access_token(
-        data={"sub": str(user.id), "action": "password_reset"}
-    )
-    return {
-        "message": f"Reset link dispatched to {payload.email}.",
-        "reset_token_preview": reset_token  # Provided for easy local testing in demo
-    }
+    # Keep the response indistinguishable until a private delivery channel is configured.
+    return {"message": "If an account exists, password reset instructions will be sent."}
 
 
 @router.get("/me", response_model=UserResponse)
