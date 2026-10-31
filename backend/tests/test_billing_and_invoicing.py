@@ -120,6 +120,11 @@ def test_billing_runner_and_idempotency(client: TestClient):
 
 
 def test_invoice_lifecycle_and_payment_reconciliation(client: TestClient):
+    from datetime import date
+    from app.api.dashboard import set_current_simulated_date
+
+    set_current_simulated_date(date(2026, 10, 1))
+
     u = client.post("/api/auth/register", json={"email": "payer@test.com", "password": "Password123!", "role": "customer"}).json()
     p = client.post("/api/products", json={"name": "Hosting Node", "type": "service", "sales_price": 500.0, "cost_price": 100.0, "variants": []}).json()
     plan = client.post("/api/plans", json={"name": "Node Monthly", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-10-01", "auto_close_on_end": False, "allow_pause": True}).json()
@@ -167,3 +172,64 @@ def test_invoice_lifecycle_and_payment_reconciliation(client: TestClient):
     inv_full = client.get(f"/api/invoices/{inv_id}").json()
     assert inv_full["status"] == "Paid"
     assert inv_full["amount_paid"] == 500.0
+
+    set_current_simulated_date(date.today())
+
+
+def test_overdue_invoice_retains_overdue_on_partial_payment(client: TestClient):
+    from datetime import date
+    from app.api.dashboard import set_current_simulated_date
+
+    # Set initial simulator date
+    set_current_simulated_date(date(2026, 10, 1))
+
+    u = client.post("/api/auth/register", json={"email": "aging@test.com", "password": "Password123!", "role": "customer"}).json()
+    p = client.post("/api/products", json={"name": "Cloud API", "type": "service", "sales_price": 1000.0, "cost_price": 200.0, "variants": []}).json()
+    plan = client.post("/api/plans", json={"name": "API Plan", "frequency": "monthly", "min_quantity": 1, "start_date": "2026-10-01", "auto_close_on_end": False, "allow_pause": True}).json()
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": u["id"], "plan_id": plan["id"], "start_date": "2026-10-01", "lines": [{"product_id": p["id"], "quantity": 1, "unit_price": 1000.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    inv = client.get("/api/invoices").json()[0]
+    inv_id = inv["id"]
+    client.post(f"/api/invoices/{inv_id}/confirm")
+
+    # Invoice due date is 2026-10-15 (14 days after issue date 2026-10-01)
+    # Advance time to 2026-10-20 (overdue)
+    set_current_simulated_date(date(2026, 10, 20))
+
+    # Fetch invoices: status must now be Overdue
+    inv_overdue = client.get(f"/api/invoices/{inv_id}").json()
+    assert inv_overdue["status"] == "Overdue"
+
+    # Make partial payment (250 of 1000) on the overdue invoice
+    pay = client.post(
+        "/api/payments",
+        json={"invoice_id": inv_id, "amount": 250.0, "payment_method": "upi", "payment_date": "2026-10-20"},
+    )
+    assert pay.status_code == 201
+
+    # Status must STILL be Overdue (not overwritten to Partially Paid while past due)
+    inv_after_pay = client.get(f"/api/invoices/{inv_id}").json()
+    assert inv_after_pay["status"] == "Overdue"
+    assert inv_after_pay["amount_paid"] == 250.0
+
+    # Pay remaining balance (750 of 1000)
+    pay_full = client.post(
+        "/api/payments",
+        json={"invoice_id": inv_id, "amount": 750.0, "payment_method": "bank_transfer", "payment_date": "2026-10-20"},
+    )
+    assert pay_full.status_code == 201
+
+    # Status must transition to Paid
+    inv_paid = client.get(f"/api/invoices/{inv_id}").json()
+    assert inv_paid["status"] == "Paid"
+    assert inv_paid["amount_paid"] == 1000.0
+
+    # Reset simulator back to today
+    set_current_simulated_date(date.today())
+
