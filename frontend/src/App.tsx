@@ -52,6 +52,13 @@ function AppContent() {
     }
   };
 
+  const handleLogout = () => {
+    api.logout();
+    setRole('customer');
+    setEmail('');
+    navigate('/login');
+  };
+
   const advanceDay = async () => {
     const current = new Date(simulatedDate);
     current.setDate(current.getDate() + 1);
@@ -78,6 +85,7 @@ function AppContent() {
           userEmail={email}
           onRoleChange={handleRoleChange}
           onTriggerDemo={advanceDay}
+          onLogout={handleLogout}
         />
 
         {/* Upflow Pill Banner (Read all 29 stories | Explore) */}

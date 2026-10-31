@@ -339,7 +339,38 @@ const initialInvoices: Invoice[] = [
   },
 ];
 
+// User store with pre-seeded credentials for offline resilience
+interface StoredUser extends User {
+  passwordHash: string;
+}
+
+const initialUsers: StoredUser[] = [
+  {
+    id: 'user-admin',
+    email: 'admin@brightloop.io',
+    name: 'Sarah Connor',
+    role: 'admin',
+    passwordHash: 'Brightloop@2026!',
+  },
+  {
+    id: 'user-staff',
+    email: 'operations@brightloop.io',
+    name: 'Alex Vance',
+    role: 'staff',
+    passwordHash: 'Brightloop@2026!',
+  },
+  {
+    id: 'user-customer',
+    email: 'finance@acmeglobal.com',
+    name: 'Acme Global Finance',
+    role: 'customer',
+    customer_id: 'cust-1',
+    passwordHash: 'Brightloop@2026!',
+  },
+];
+
 // In-Memory state store for mock resilience
+let usersStore = [...initialUsers];
 let productsStore = [...initialProducts];
 let plansStore = [...initialPlans];
 let subscriptionsStore = [...initialSubscriptions];
@@ -386,6 +417,113 @@ export const api = {
       localStorage.removeItem('brightloop_user');
       localStorage.removeItem('brightloop_token');
     }
+  },
+
+  async login(email: string, password: string): Promise<User> {
+    try {
+      const data = await request<{ access_token: string; role: User['role']; customer_id?: string }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      const user: User = {
+        id: `user-${data.role}`,
+        email,
+        name: email.split('@')[0],
+        role: data.role,
+        customer_id: data.customer_id,
+      };
+      this.setCurrentUser(user, data.access_token);
+      return user;
+    } catch {
+      // Mock auth fallback
+      const found = usersStore.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      if (!found) {
+        throw new Error('Invalid email or password');
+      }
+      if (found.passwordHash !== password) {
+        throw new Error('Invalid password for account');
+      }
+      const token = `mock-jwt-token-${Date.now()}`;
+      const user: User = {
+        id: found.id,
+        email: found.email,
+        name: found.name,
+        role: found.role,
+        customer_id: found.customer_id,
+      };
+      this.setCurrentUser(user, token);
+      return user;
+    }
+  },
+
+  async register(data: { email: string; password: string; role: User['role']; name?: string }): Promise<User> {
+    // Check regex invariant: >= 8 chars, uppercase, lowercase, special
+    const hasMinLength = data.password.length >= 8;
+    const hasUpper = /[A-Z]/.test(data.password);
+    const hasLower = /[a-z]/.test(data.password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(data.password);
+
+    if (!hasMinLength || !hasUpper || !hasLower || !hasSpecial) {
+      throw new Error('Password must be at least 8 characters and contain uppercase, lowercase, and a special character.');
+    }
+
+    try {
+      const res = await request<{ access_token: string; role: User['role']; customer_id?: string }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      const user: User = {
+        id: `user-${Date.now()}`,
+        email: data.email,
+        name: data.name || data.email.split('@')[0],
+        role: res.role,
+        customer_id: res.customer_id,
+      };
+      this.setCurrentUser(user, res.access_token);
+      return user;
+    } catch {
+      const existing = usersStore.find((u) => u.email.toLowerCase() === data.email.toLowerCase());
+      if (existing) {
+        throw new Error('An account with this email address already exists.');
+      }
+      const newUser: StoredUser = {
+        id: `user-${Date.now()}`,
+        email: data.email,
+        name: data.name || data.email.split('@')[0],
+        role: data.role,
+        customer_id: data.role === 'customer' ? `cust-${Date.now()}` : undefined,
+        passwordHash: data.password,
+      };
+      usersStore.push(newUser);
+      const user: User = {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        customer_id: newUser.customer_id,
+      };
+      this.setCurrentUser(user, `mock-token-${Date.now()}`);
+      return user;
+    }
+  },
+
+  async resetPassword(email: string): Promise<{ message: string }> {
+    try {
+      return await request<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      const found = usersStore.some((u) => u.email.toLowerCase() === email.toLowerCase());
+      if (!found) {
+        throw new Error('No registered account found with this email address.');
+      }
+      return { message: `Password reset link with secure token dispatched to ${email}` };
+    }
+  },
+
+  logout() {
+    this.setCurrentUser(null);
   },
 
   // Products
@@ -441,12 +579,23 @@ export const api = {
 
   // Subscriptions
   async getSubscriptions(statusFilter?: string): Promise<Subscription[]> {
+    const currentUser = this.getCurrentUser();
     try {
       const query = statusFilter && statusFilter !== 'All' ? `?status=${statusFilter}` : '';
       return await request<Subscription[]>(`/subscriptions${query}`);
     } catch {
-      if (!statusFilter || statusFilter === 'All') return [...subscriptionsStore];
-      return subscriptionsStore.filter((s) => s.status.toLowerCase() === statusFilter.toLowerCase());
+      let result = [...subscriptionsStore];
+      if (currentUser?.role === 'customer') {
+        result = result.filter(
+          (s) =>
+            (currentUser.customer_id && s.customer_id === currentUser.customer_id) ||
+            s.customer_email.toLowerCase() === currentUser.email.toLowerCase()
+        );
+      }
+      if (statusFilter && statusFilter !== 'All') {
+        result = result.filter((s) => s.status.toLowerCase() === statusFilter.toLowerCase());
+      }
+      return result;
     }
   },
 
@@ -518,12 +667,21 @@ export const api = {
 
   // Invoices
   async getInvoices(statusFilter?: string): Promise<Invoice[]> {
+    const currentUser = this.getCurrentUser();
     try {
       const query = statusFilter && statusFilter !== 'All' ? `?status=${statusFilter}` : '';
       return await request<Invoice[]>(`/invoices${query}`);
     } catch {
-      if (!statusFilter || statusFilter === 'All') return [...invoicesStore];
-      return invoicesStore.filter((inv) => inv.status.toLowerCase() === statusFilter.toLowerCase());
+      let result = [...invoicesStore];
+      if (currentUser?.role === 'customer') {
+        result = result.filter(
+          (inv) =>
+            (currentUser.customer_id && inv.customer_id === currentUser.customer_id) ||
+            inv.customer_name.toLowerCase().includes(currentUser.name.toLowerCase())
+        );
+      }
+      if (!statusFilter || statusFilter === 'All') return result;
+      return result.filter((inv) => inv.status.toLowerCase() === statusFilter.toLowerCase());
     }
   },
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router';
-import { ChevronDown, Sparkles, UserCheck } from 'lucide-react';
+import { ChevronDown, Sparkles, UserCheck, LogOut } from 'lucide-react';
 import type { UserRole } from '../types';
 
 interface NavbarProps {
@@ -8,6 +8,7 @@ interface NavbarProps {
   userEmail: string;
   onRoleChange: (role: UserRole) => void;
   onTriggerDemo?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +16,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userEmail,
   onRoleChange,
   onTriggerDemo,
+  onLogout,
 }) => {
   return (
     <div className="w-full pt-4 px-4 sm:px-6 lg:px-8">
@@ -30,17 +32,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Navigation Items (Upflow style) */}
           <div className="hidden lg:flex items-center gap-6 text-xs font-medium text-slate-300">
-            <NavLink
-              to="/admin/products"
-              className={({ isActive }) =>
-                `flex items-center gap-1.5 transition hover:text-white ${
-                  isActive ? 'text-white font-semibold' : ''
-                }`
-              }
-            >
-              <span>Products & Plans</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </NavLink>
+            {currentRole !== 'customer' && (
+              <NavLink
+                to="/admin/products"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 transition hover:text-white ${
+                    isActive ? 'text-white font-semibold' : ''
+                  }`
+                }
+              >
+                <span>Products & Plans</span>
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </NavLink>
+            )}
 
             <NavLink
               to="/staff/subscriptions"
@@ -50,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`
               }
             >
-              <span>Subscriptions</span>
+              <span>{currentRole === 'customer' ? 'My Subscriptions' : 'Subscriptions'}</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </NavLink>
 
@@ -62,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`
               }
             >
-              <span>Invoices & Ledger</span>
+              <span>{currentRole === 'customer' ? 'My Invoices' : 'Invoices & Ledger'}</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </NavLink>
 
@@ -94,6 +98,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             {userEmail ? userEmail.split('@')[0] : 'Login'}
           </NavLink>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Sign Out of Session"
+              className="hidden sm:flex items-center justify-center h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          )}
 
           {/* Upflow "Book a demo" pill CTA -> Fast-Action */}
           <button
