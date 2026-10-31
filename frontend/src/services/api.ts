@@ -529,7 +529,21 @@ export const api = {
   // Products
   async getProducts(): Promise<Product[]> {
     try {
-      return await request<Product[]>('/products');
+      const raw = await request<any[]>('/products');
+      return raw.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        type: p.type,
+        sales_price: Number(p.sales_price),
+        cost_price: Number(p.cost_price),
+        notes: p.notes || '',
+        variants: (p.variants || []).map((v: any) => ({
+          id: String(v.id),
+          attribute_name: v.attribute_name,
+          attribute_value: v.attribute_value,
+          price_extra: Number(v.price_extra),
+        })),
+      }));
     } catch {
       return [...productsStore];
     }
@@ -537,10 +551,36 @@ export const api = {
 
   async createProduct(product: Omit<Product, 'id'>): Promise<Product> {
     try {
-      return await request<Product>('/products', {
+      const payload = {
+        name: product.name,
+        type: product.type,
+        sales_price: Number(product.sales_price),
+        cost_price: Number(product.cost_price),
+        notes: product.notes || '',
+        variants: (product.variants || []).map((v) => ({
+          attribute_name: v.attribute_name,
+          attribute_value: v.attribute_value,
+          price_extra: Number(v.price_extra),
+        })),
+      };
+      const data = await request<any>('/products', {
         method: 'POST',
-        body: JSON.stringify(product),
+        body: JSON.stringify(payload),
       });
+      return {
+        id: String(data.id),
+        name: data.name,
+        type: data.type,
+        sales_price: Number(data.sales_price),
+        cost_price: Number(data.cost_price),
+        notes: data.notes || '',
+        variants: (data.variants || []).map((v: any) => ({
+          id: String(v.id),
+          attribute_name: v.attribute_name,
+          attribute_value: v.attribute_value,
+          price_extra: Number(v.price_extra),
+        })),
+      };
     } catch {
       const newProduct: Product = {
         ...product,
@@ -553,11 +593,32 @@ export const api = {
   },
 
   async updateProduct(id: string, product: Partial<Product>): Promise<Product> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Product>(`/products/${id}`, {
+      const payload: Record<string, any> = {};
+      if (product.name !== undefined) payload.name = product.name;
+      if (product.type !== undefined) payload.type = product.type;
+      if (product.sales_price !== undefined) payload.sales_price = Number(product.sales_price);
+      if (product.cost_price !== undefined) payload.cost_price = Number(product.cost_price);
+      if (product.notes !== undefined) payload.notes = product.notes;
+      const data = await request<any>(`/products/${numId}`, {
         method: 'PATCH',
-        body: JSON.stringify(product),
+        body: JSON.stringify(payload),
       });
+      return {
+        id: String(data.id),
+        name: data.name,
+        type: data.type,
+        sales_price: Number(data.sales_price),
+        cost_price: Number(data.cost_price),
+        notes: data.notes || '',
+        variants: (data.variants || []).map((v: any) => ({
+          id: String(v.id),
+          attribute_name: v.attribute_name,
+          attribute_value: v.attribute_value,
+          price_extra: Number(v.price_extra),
+        })),
+      };
     } catch {
       const idx = productsStore.findIndex((p) => p.id === id);
       if (idx !== -1) {
@@ -569,8 +630,9 @@ export const api = {
   },
 
   async deleteProduct(id: string): Promise<void> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      await request<void>(`/products/${id}`, { method: 'DELETE' });
+      await request<void>(`/products/${numId}`, { method: 'DELETE' });
     } catch {
       productsStore = productsStore.filter((p) => p.id !== id);
     }
@@ -579,7 +641,17 @@ export const api = {
   // Plans
   async getPlans(): Promise<Plan[]> {
     try {
-      return await request<Plan[]>('/plans');
+      const raw = await request<any[]>('/plans');
+      return raw.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        frequency: p.frequency,
+        min_quantity: Number(p.min_quantity ?? 1),
+        start_date: p.start_date || '2026-01-01',
+        end_date: p.end_date || undefined,
+        auto_close_on_end: Boolean(p.auto_close_on_end),
+        allow_pause: p.allow_pause !== undefined ? Boolean(p.allow_pause) : true,
+      }));
     } catch {
       return [...plansStore];
     }
@@ -587,10 +659,31 @@ export const api = {
 
   async createPlan(plan: Omit<Plan, 'id'>): Promise<Plan> {
     try {
-      return await request<Plan>('/plans', {
+      const payload = {
+        name: plan.name,
+        frequency: plan.frequency,
+        min_quantity: Number(plan.min_quantity || 1),
+        start_date: plan.start_date || new Date().toISOString().slice(0, 10),
+        end_date: plan.end_date || null,
+        auto_close_on_end: Boolean(plan.auto_close_on_end),
+        allow_early_close: true,
+        allow_pause: plan.allow_pause !== undefined ? Boolean(plan.allow_pause) : true,
+        allow_manual_renewal: true,
+      };
+      const res = await request<any>('/plans', {
         method: 'POST',
-        body: JSON.stringify(plan),
+        body: JSON.stringify(payload),
       });
+      return {
+        id: String(res.id),
+        name: res.name,
+        frequency: res.frequency,
+        min_quantity: Number(res.min_quantity),
+        start_date: res.start_date,
+        end_date: res.end_date || undefined,
+        auto_close_on_end: Boolean(res.auto_close_on_end),
+        allow_pause: Boolean(res.allow_pause),
+      };
     } catch {
       const newPlan: Plan = {
         ...plan,
@@ -602,11 +695,22 @@ export const api = {
   },
 
   async updatePlan(id: string, plan: Partial<Plan>): Promise<Plan> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Plan>(`/plans/${id}`, {
+      const res = await request<any>(`/plans/${numId}`, {
         method: 'PATCH',
         body: JSON.stringify(plan),
       });
+      return {
+        id: String(res.id),
+        name: res.name,
+        frequency: res.frequency,
+        min_quantity: Number(res.min_quantity),
+        start_date: res.start_date,
+        end_date: res.end_date || undefined,
+        auto_close_on_end: Boolean(res.auto_close_on_end),
+        allow_pause: Boolean(res.allow_pause),
+      };
     } catch {
       const idx = plansStore.findIndex((p) => p.id === id);
       if (idx !== -1) {
@@ -618,8 +722,9 @@ export const api = {
   },
 
   async deletePlan(id: string): Promise<void> {
+    const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      await request<void>(`/plans/${id}`, { method: 'DELETE' });
+      await request<void>(`/plans/${numId}`, { method: 'DELETE' });
     } catch {
       plansStore = plansStore.filter((p) => p.id !== id);
     }
@@ -681,10 +786,35 @@ export const api = {
     lines: Array<{ product_id: string; variant_id?: string; quantity: number }>;
   }): Promise<Subscription> {
     try {
-      return await request<Subscription>('/quotations', {
+      const res = await request<any>('/quotations', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return {
+        id: String(res.id),
+        subscription_number: res.subscription_number || `SUB-${res.id}`,
+        customer_id: String(res.customer_id),
+        customer_name: res.customer_name || data.customer_name,
+        customer_email: res.customer_email || data.customer_email,
+        plan_id: String(res.plan_id),
+        plan_name: res.plan_name || 'Standard Plan',
+        frequency: res.frequency || 'monthly',
+        status: res.status || 'Quotation',
+        start_date: res.start_date,
+        expiry_date: res.expiry_date || '',
+        next_billing_date: res.next_billing_date || res.start_date,
+        payment_terms: res.payment_terms || data.payment_terms || 'Net 15',
+        recurring_amount: Number(res.recurring_amount ?? 0),
+        lines: (res.lines || []).map((l: any) => ({
+          id: String(l.id || ''),
+          product_id: String(l.product_id),
+          product_name: l.product_name || `Product #${l.product_id}`,
+          variant_name: l.variant_name || '',
+          quantity: l.quantity,
+          unit_price: Number(l.unit_price),
+          line_amount: Number(l.line_amount ?? l.unit_price * l.quantity),
+        })),
+      };
     } catch {
       const selectedPlan = plansStore.find((p) => p.id === data.plan_id) || plansStore[0];
       const lines = data.lines.map((l) => {
@@ -803,7 +933,36 @@ export const api = {
   async confirmInvoice(id: string): Promise<Invoice> {
     const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Invoice>(`/invoices/${numId}/confirm`, { method: 'POST' });
+      const inv = await request<any>(`/invoices/${numId}/confirm`, { method: 'POST' });
+      return {
+        id: String(inv.id),
+        invoice_number: inv.invoice_number || `INV-${inv.id}`,
+        subscription_id: String(inv.subscription_id),
+        subscription_number: inv.subscription_number || `SUB-${inv.subscription_id}`,
+        customer_id: String(inv.customer_id),
+        customer_name: inv.customer_name || `Customer #${inv.customer_id}`,
+        billing_cycle_key: inv.billing_cycle_key || inv.idempotency_key || '',
+        period_start: inv.period_start,
+        period_end: inv.period_end,
+        issue_date: inv.issue_date || inv.invoice_date,
+        due_date: inv.due_date,
+        subtotal: Number(inv.subtotal ?? 0),
+        tax_amount: Number(inv.tax_amount ?? inv.tax_total ?? 0),
+        discount_amount: Number(inv.discount_amount ?? inv.discount_total ?? 0),
+        total_amount: Number(inv.total_amount ?? inv.total ?? 0),
+        amount_paid: Number(inv.amount_paid ?? 0),
+        status: inv.status,
+        lines: (inv.lines || []).map((l: any) => ({
+          id: String(l.id || ''),
+          description: l.description || 'Billing item',
+          quantity: l.quantity,
+          unit_price: Number(l.unit_price),
+          tax_rate: Number(l.tax_rate ?? 0),
+          tax_amount: Number(l.tax_amount ?? 0),
+          discount_amount: Number(l.discount_amount ?? 0),
+          line_total: Number(l.line_total ?? l.line_subtotal ?? l.unit_price * l.quantity),
+        })),
+      };
     } catch {
       const idx = invoicesStore.findIndex((i) => i.id === id);
       if (idx !== -1) {
@@ -817,7 +976,36 @@ export const api = {
   async cancelInvoice(id: string): Promise<Invoice> {
     const numId = parseInt(String(id).replace(/\D/g, ''), 10) || id;
     try {
-      return await request<Invoice>(`/invoices/${numId}/cancel`, { method: 'POST' });
+      const inv = await request<any>(`/invoices/${numId}/cancel`, { method: 'POST' });
+      return {
+        id: String(inv.id),
+        invoice_number: inv.invoice_number || `INV-${inv.id}`,
+        subscription_id: String(inv.subscription_id),
+        subscription_number: inv.subscription_number || `SUB-${inv.subscription_id}`,
+        customer_id: String(inv.customer_id),
+        customer_name: inv.customer_name || `Customer #${inv.customer_id}`,
+        billing_cycle_key: inv.billing_cycle_key || inv.idempotency_key || '',
+        period_start: inv.period_start,
+        period_end: inv.period_end,
+        issue_date: inv.issue_date || inv.invoice_date,
+        due_date: inv.due_date,
+        subtotal: Number(inv.subtotal ?? 0),
+        tax_amount: Number(inv.tax_amount ?? inv.tax_total ?? 0),
+        discount_amount: Number(inv.discount_amount ?? inv.discount_total ?? 0),
+        total_amount: Number(inv.total_amount ?? inv.total ?? 0),
+        amount_paid: Number(inv.amount_paid ?? 0),
+        status: inv.status,
+        lines: (inv.lines || []).map((l: any) => ({
+          id: String(l.id || ''),
+          description: l.description || 'Billing item',
+          quantity: l.quantity,
+          unit_price: Number(l.unit_price),
+          tax_rate: Number(l.tax_rate ?? 0),
+          tax_amount: Number(l.tax_amount ?? 0),
+          discount_amount: Number(l.discount_amount ?? 0),
+          line_total: Number(l.line_total ?? l.line_subtotal ?? l.unit_price * l.quantity),
+        })),
+      };
     } catch {
       const idx = invoicesStore.findIndex((i) => i.id === id);
       if (idx !== -1) {
@@ -860,10 +1048,11 @@ export const api = {
   },
 
   async triggerBillingRun(simulatedDate?: string): Promise<{ evaluated: number; generated: number; skipped: number }> {
+    const today = simulatedDate && simulatedDate.trim() ? simulatedDate : new Date().toISOString().slice(0, 10);
     try {
       return await request<{ evaluated: number; generated: number; skipped: number }>('/billing/run', {
         method: 'POST',
-        body: JSON.stringify({ simulated_date: simulatedDate }),
+        body: JSON.stringify({ simulated_date: today }),
       });
     } catch {
       // Mock runner: find active subscriptions
