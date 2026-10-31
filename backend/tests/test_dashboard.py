@@ -83,3 +83,24 @@ def test_dashboard_summary_and_chrono_simulator(client: TestClient):
     final_summary = client.get("/api/dashboard/summary").json()
     assert final_summary["total_revenue_collected"] >= 1000.0
     assert final_summary["outstanding_receivables"] == 0.0
+
+
+def test_system_clock_persistence(client: TestClient):
+    from datetime import date
+    from app.models.billing import SystemClock
+
+    # Travel to a specific future date
+    res = client.post("/api/simulation/time-travel", json={"simulated_date": "2027-04-15"})
+    assert res.status_code == 200
+    assert res.json()["simulated_date"] == "2027-04-15"
+
+    # Verify that the date is stored in SystemClock table in database
+    with Session(test_engine) as session:
+        clock = session.get(SystemClock, 1)
+        assert clock is not None
+        assert clock.simulated_date == date(2027, 4, 15)
+
+    # Calling summary reflects the persisted simulated date
+    dash = client.get("/api/dashboard/summary").json()
+    assert dash["simulated_date"] == "2027-04-15"
+

@@ -29,6 +29,13 @@ class DiscountScope(str, Enum):
     SUBSCRIPTION = "subscription"
 
 
+class SystemClock(SQLModel, table=True):
+    __tablename__ = "system_clock"
+
+    id: int = Field(default=1, primary_key=True)
+    simulated_date: date = Field(default_factory=date.today)
+
+
 class TaxRule(SQLModel, table=True):
     __tablename__ = "tax_rules"
 

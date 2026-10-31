@@ -160,3 +160,116 @@ def test_subscription_filtering_and_deletion(client: TestClient):
     del_resp = client.delete(f"/api/subscriptions/{sub['id']}")
     assert del_resp.status_code == 204
     assert client.get(f"/api/subscriptions/{sub['id']}").status_code == 404
+
+
+def test_quotation_creation_rejects_invalid_ids(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    # Invalid customer ID must return 404
+    resp_bad_user = client.post(
+        "/api/quotations",
+        json={"customer_id": 99999, "plan_id": plan_id, "lines": [{"product_id": prod_id, "quantity": 1}]},
+    )
+    assert resp_bad_user.status_code == 404
+    assert "Customer with ID" in resp_bad_user.json()["detail"]
+
+    # Invalid plan ID must return 404
+    resp_bad_plan = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": 99999, "lines": [{"product_id": prod_id, "quantity": 1}]},
+    )
+    assert resp_bad_plan.status_code == 404
+    assert "Plan with ID" in resp_bad_plan.json()["detail"]
+
+    # Invalid product ID must return 404
+    resp_bad_prod = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "lines": [{"product_id": 99999, "quantity": 1}]},
+    )
+    assert resp_bad_prod.status_code == 404
+    assert "Product with ID" in resp_bad_prod.json()["detail"]
+
+
+def test_delete_subscription_with_invoices_returns_409(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "start_date": "2026-10-01", "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 2, "unit_price": 600.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    # Generate an invoice via billing run
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    invs = client.get(f"/api/invoices?customer_id={user_id}").json()
+    assert len(invs) >= 1
+
+    # Attempting to delete must return 409 Conflict instead of 500 IntegrityError
+    del_res = client.delete(f"/api/subscriptions/{sub['id']}")
+    assert del_res.status_code == 409
+    assert "Cannot delete subscription with existing billing history" in del_res.json()["detail"]
+
+
+def test_patch_status_active_enforces_min_quantity(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    # Quotation with quantity 1 (plan requires min_quantity 2)
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "start_date": "2026-10-01", "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 1, "unit_price": 600.0}]},
+    ).json()
+
+    # Direct PATCH to Active must fail with 422
+    patch_res = client.patch(f"/api/subscriptions/{sub['id']}/status", json={"status": "Active"})
+    assert patch_res.status_code == 422
+    assert "below the plan minimum quantity" in patch_res.json()["detail"]
+
+
+def test_close_quotation_contract(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    q_resp = client.post(
+        "/api/quotations",
+        json={
+            "customer_id": user_id,
+            "plan_id": plan_id,
+            "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 2, "unit_price": 600.0}],
+        },
+    )
+    sub_id = q_resp.json()["id"]
+    assert q_resp.json()["status"] == "Quotation"
+
+    # Close the quotation directly (e.g. quote declined / closed)
+    close_resp = client.patch(f"/api/subscriptions/{sub_id}/status", json={"status": "Closed"})
+    assert close_resp.status_code == 200
+    assert close_resp.json()["status"] == "Closed"
+
+
+def test_close_active_subscription_cancels_draft_invoices(client: TestClient):
+    user_id, prod_id, var_id, plan_id = _setup_catalog(client)
+
+    sub = client.post(
+        "/api/quotations",
+        json={"customer_id": user_id, "plan_id": plan_id, "start_date": "2026-10-01", "lines": [{"product_id": prod_id, "variant_id": var_id, "quantity": 2, "unit_price": 600.0}]},
+    ).json()
+    client.post(f"/api/quotations/{sub['id']}/confirm")
+
+    # Generate billing run to create a draft invoice
+    client.post("/api/billing/run", json={"simulated_date": "2026-10-01"})
+    invoices = client.get(f"/api/invoices?customer_id={user_id}").json()
+    assert len(invoices) >= 1
+    inv_id = invoices[0]["id"]
+    assert invoices[0]["status"] == "Draft"
+
+    # Close the subscription
+    close_resp = client.patch(f"/api/subscriptions/{sub['id']}/status", json={"status": "Closed"})
+    assert close_resp.status_code == 200
+    assert close_resp.json()["status"] == "Closed"
+
+    # Verify that the unconfirmed draft invoice was cancelled
+    updated_inv = client.get(f"/api/invoices/{inv_id}").json()
+    assert updated_inv["status"] == "Cancelled"
+
+
+
+
