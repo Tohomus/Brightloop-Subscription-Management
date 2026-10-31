@@ -7,6 +7,8 @@ import {
   LogIn,
   CheckCircle2,
   Database,
+  LayoutDashboard,
+  UserCheck,
 } from 'lucide-react';
 import type { UserRole } from '../types';
 
@@ -16,6 +18,13 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   const navItems = [
+    {
+      to: '/admin/dashboard',
+      label: 'Executive Telemetry',
+      badge: 'SLA <2s',
+      icon: LayoutDashboard,
+      roles: ['admin', 'staff'],
+    },
     {
       to: '/admin/products',
       label: 'Products & Plans',
@@ -36,6 +45,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       badge: 'Ledger',
       icon: Receipt,
       roles: ['admin', 'staff', 'customer'],
+    },
+    {
+      to: '/portal',
+      label: 'Customer Portal',
+      badge: 'Self-Serve',
+      icon: UserCheck,
+      roles: ['admin', 'customer'],
     },
     {
       to: '/login',

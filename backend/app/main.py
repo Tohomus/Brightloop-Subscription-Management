@@ -9,6 +9,7 @@ from app.api.subscriptions import router as subscriptions_router, quotations_rou
 from app.api.billing import router as billing_router, tax_router, discount_router
 from app.api.invoices import router as invoices_router
 from app.api.payments import router as payments_router
+from app.api.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -52,6 +53,7 @@ app.include_router(tax_router)
 app.include_router(discount_router)
 app.include_router(invoices_router)
 app.include_router(payments_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health", tags=["Health"])

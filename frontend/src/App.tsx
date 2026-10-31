@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -6,6 +6,8 @@ import { CatalogPage } from './pages/CatalogPage';
 import { SubscriptionsPage } from './pages/SubscriptionsPage';
 import { InvoicesPage } from './pages/InvoicesPage';
 import { LoginPage } from './pages/LoginPage';
+import { ExecutiveDashboard } from './pages/ExecutiveDashboard';
+import { CustomerPortal } from './pages/CustomerPortal';
 import type { UserRole } from './types';
 import { api } from './services/api';
 import { Calendar, ShieldCheck, Check } from 'lucide-react';
@@ -18,6 +20,24 @@ function AppContent() {
   const [email, setEmail] = useState<string>(initialUser?.email || 'admin@brightloop.io');
   const [simulatedDate, setSimulatedDate] = useState<string>('2026-10-31');
   const [runResult, setRunResult] = useState<string | null>(null);
+  const [isBackendLive, setIsBackendLive] = useState<boolean>(false);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
+
+  useEffect(() => {
+    let active = true;
+    const verifyHealth = async () => {
+      const live = await api.checkHealth();
+      if (active) setIsBackendLive(live);
+    };
+    void verifyHealth();
+    const interval = setInterval(() => {
+      void verifyHealth();
+    }, 8000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
@@ -46,9 +66,9 @@ function AppContent() {
       role: newRole,
     });
     if (newRole === 'customer') {
-      navigate('/staff/subscriptions');
+      navigate('/portal');
     } else {
-      navigate('/admin/products');
+      navigate('/admin/dashboard');
     }
   };
 
@@ -60,20 +80,23 @@ function AppContent() {
   };
 
   const advanceDay = async () => {
-    const current = new Date(simulatedDate);
-    current.setDate(current.getDate() + 1);
-    const nextDate = current.toISOString().slice(0, 10);
+    const parts = simulatedDate.split('-').map(Number);
+    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + 1));
+    const nextDate = d.toISOString().slice(0, 10);
     setSimulatedDate(nextDate);
     const result = await api.triggerBillingRun(nextDate);
     setRunResult(`Simulated ${nextDate}: Evaluated ${result.evaluated}, Generated ${result.generated}, Skipped ${result.skipped} (idempotent)`);
+    setRefreshKey((prev) => prev + 1);
     setTimeout(() => setRunResult(null), 4000);
   };
 
   // Upflow-style capsule steps
   const steps = [
+    { number: '00', title: 'Executive Telemetry', path: '/admin/dashboard' },
     { number: '01', title: 'Catalog & Plans', path: '/admin/products' },
     { number: '02', title: 'Subscriptions', path: '/staff/subscriptions' },
     { number: '03', title: 'Invoicing & Cash', path: '/staff/invoices' },
+    { number: '04', title: 'Customer Portal', path: '/portal' },
   ];
 
   return (
@@ -155,14 +178,16 @@ function AppContent() {
       {/* 3. MAIN WORKSPACE */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-1">
         <Sidebar role={role} />
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0" key={refreshKey}>
           <Routes>
+            <Route path="/admin/dashboard" element={<ExecutiveDashboard />} />
             <Route path="/admin/products" element={<CatalogPage />} />
             <Route path="/staff/subscriptions" element={<SubscriptionsPage />} />
             <Route path="/staff/invoices" element={<InvoicesPage />} />
+            <Route path="/portal" element={<CustomerPortal />} />
             <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-            <Route path="/" element={<Navigate to="/admin/products" replace />} />
-            <Route path="*" element={<Navigate to="/admin/products" replace />} />
+            <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </main>
       </div>
@@ -174,8 +199,17 @@ function AppContent() {
             <ShieldCheck className="h-4 w-4 text-white" />
           </div>
           <div>
-            <div className="font-semibold text-white">Odoo × CUSAT Engine</div>
-            <div className="text-[10px] text-slate-400">Offline SQLite Active 👋</div>
+            <div className="font-semibold text-white flex items-center gap-1.5">
+              <span>Odoo × CUSAT Engine</span>
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isBackendLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                }`}
+              ></span>
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono">
+              {isBackendLive ? 'FastAPI Live :8000 • SQLite' : 'Offline Mock Active 👋'}
+            </div>
           </div>
         </div>
       </div>
